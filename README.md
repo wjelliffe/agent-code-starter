@@ -55,3 +55,19 @@ If revisions are requested:
 
 - The local pulled issue mirror (`docs/issues/ISSUE-<n>.md`) is intentionally removed by `/commit` to avoid duplicating canonical issue content from GitHub.
 - By default, commands preserve strict approval-gate behavior and avoid destructive actions.
+
+## Using Codex Skills
+
+This template also supports Codex skills in `codex-skills/`.
+
+- Repo-defined skill instructions live in `codex-skills/<skill-name>/SKILL.md`.
+- Repo trigger behavior is defined in `AGENTS.md`.
+- Global availability is from `~/.codex/skills` (app-level install).
+
+In Codex threads, invoke by naming the skill, for example:
+
+```text
+$issues
+```
+
+You can also use slash-style wording (`/issues`) or plain language that clearly matches the skill intent.
