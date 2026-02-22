@@ -18,13 +18,32 @@ Execute the end-to-end issue workflow in strict Two-Gate Mode.
 
 - Issue number is required. If missing, ask once and stop.
 
+## Preflight Worktree Isolation (Required)
+
+Before running workflow steps, ensure execution is in an issue-isolated worktree.
+
+- Repository root: detect with `git rev-parse --show-toplevel`
+- Repository name: basename of repository root
+- Worktree path: `../<repo-name>-issue-<num>`
+- Branch name: `codex/issue-<num>-<slug>`
+- Base branch/ref: `origin/main` (fallback `main` if `origin/main` is unavailable)
+
+Behavior:
+
+- If already inside the matching worktree and on the matching branch, continue.
+- If not, create/switch to the target worktree before Step 1.
+- If target worktree exists, reuse only when branch matches and working tree is clean.
+- If target worktree exists but is dirty or on a mismatched branch, stop and ask user how to proceed.
+- Never force-delete worktrees, never reset hard, and never discard uncommitted changes.
+
 ## Workflow Sequence
 
-1. `/start #<num>`
-2. `/pull #<num>`
-3. `/docs #<num>`
-4. `/implement #<num>`
-5. `/commit #<num>`
+1. Preflight worktree isolation
+2. `/start #<num>`
+3. `/pull #<num>`
+4. `/docs #<num>`
+5. `/implement #<num>`
+6. `/commit #<num>`
 
 ## Two-Gate Mode (Required)
 
