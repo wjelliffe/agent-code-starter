@@ -1,0 +1,15 @@
+name: Deploy (Template)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Deploy placeholder
+        run: |
+          echo "Configure this workflow for your deploy target."
+          echo "Replace with your deploy command/script."
