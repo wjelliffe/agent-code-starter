@@ -36,14 +36,25 @@ Behavior:
 - If target worktree exists but is dirty or on a mismatched branch, stop and ask user how to proceed.
 - Never force-delete worktrees, never reset hard, and never discard uncommitted changes.
 
+## Worktree Activation (Required)
+
+After preflight and before any workflow step:
+
+- `cd` into the issue worktree path.
+- Verify active branch equals the expected issue branch.
+- If not on the expected issue branch, switch to it explicitly before proceeding.
+- Confirm active worktree path + branch to the user in a status update.
+
 ## Workflow Sequence
 
 1. Preflight worktree isolation
-2. `/start #<num>`
-3. `/pull #<num>`
-4. `/docs #<num>`
-5. `/implement #<num>`
-6. `/commit #<num>`
+2. Worktree activation (cd + branch verification/switch)
+3. `/start #<num>`
+4. `/pull #<num>`
+5. `/docs #<num>`
+6. `/implement #<num>`
+7. `/commit #<num>`
+8. Local closeout by default: merge into local trunk (`main`/`master`), delete issue branch/worktree, do not push
 
 ## Two-Gate Mode (Required)
 
@@ -59,13 +70,30 @@ Do not ask for intermediate approvals unless blocked.
 - Pass the same issue number to all steps.
 - Proceed autonomously between gates.
 - Interrupt only for gate approval, missing input, or blocker decision.
+- Default closeout after Gate 2 approval is local integration only: commit, merge to local trunk, branch cleanup, no remote push.
+
+## Pre-Commit Diff Presentation (Required)
+
+Before Gate 2 approval prompt, always present a concrete diff review package:
+
+- `git status --short`
+- `git diff --stat`
+- changed file list with openable file paths (so the user can inspect in Codex editor)
+- concise summary of what changed and why
+- any verification commands run and outcomes
+
+Do not ask for final approval until this diff package is shown.
 
 ## Gate Prompts
 
 Use exact prompts:
 
-- `Plan ready. Reply: "Approved plan. implement now."`
-- `Final diff ready. Reply: "Approved final. commit and push." or "Approved final. commit only."`
+- `Plan ready. Reply: "Approved. Implement."`
+- `Final diff ready. Reply: "Approved. Commit and merge." or "Approved. Push to branch."`
+
+Interpretation:
+- `Approved. Commit and merge.` => commit + local merge + cleanup, no push.
+- `Approved. Push to branch.` => commit + push branch.
 
 ## Revision Loops
 
@@ -81,3 +109,4 @@ After each step provide status, touched files, and blockers. End with branch, co
 - Respect repo approval and safety rules.
 - Do not run tests/install unless explicitly requested.
 - Do not force push unless explicitly requested.
+- Never push during default closeout unless user explicitly asked to push.
