@@ -13,14 +13,32 @@ Execute the end-to-end issue workflow in strict Two-Gate Mode.
 
 - `/sdlc-do #62`
 - `/sdlc-do 62`
+- `/sdlc-do #62 mode=worktree`
+- `/sdlc-do #62 mode=inplace`
 
 ## Required Input
 
 - Issue number is required. If missing, ask once and stop.
+- Execution mode is optional:
+  - default: `inplace`
+  - optional override: `inplace`
 
-## Preflight Worktree Isolation (Required)
+## Execution Mode (Required)
 
-Before running workflow steps, ensure execution is in an issue-isolated worktree.
+### mode=worktree (opt-in)
+- Use issue-isolated worktree/branch.
+- Create/reuse/switch to `../<repo-name>-issue-<num>` and `codex/issue-<num>-<slug>`.
+- Best for parallel thread execution.
+
+### mode=inplace (default)
+- Do not create/switch worktree.
+- Stay in current opened repository/workspace.
+- Create/switch only a local issue branch in-place (`codex/issue-<num>-<slug>`).
+- Best for sequential work where user wants editor/git visibility in a single workspace.
+
+## Preflight Worktree Isolation (Conditional)
+
+Apply this section only when `mode=worktree`.
 
 - Repository root: detect with `git rev-parse --show-toplevel`
 - Repository name: basename of repository root
@@ -36,25 +54,34 @@ Behavior:
 - If target worktree exists but is dirty or on a mismatched branch, stop and ask user how to proceed.
 - Never force-delete worktrees, never reset hard, and never discard uncommitted changes.
 
-## Worktree Activation (Required)
+## Activation (Required)
 
 After preflight and before any workflow step:
 
-- `cd` into the issue worktree path.
-- Verify active branch equals the expected issue branch.
-- If not on the expected issue branch, switch to it explicitly before proceeding.
-- Confirm active worktree path + branch to the user in a status update.
+- In `worktree` mode: `cd` into issue worktree path, verify/switch to expected issue branch.
+- In `inplace` mode: verify current cwd is the user-requested repo/workspace, then verify/switch to expected issue branch in-place.
+- Confirm active path + branch + mode to the user in a status update.
 
 ## Workflow Sequence
 
-1. Preflight worktree isolation
-2. Worktree activation (cd + branch verification/switch)
+1. Determine execution mode (`inplace` default or `worktree` override)
+2. Preflight + activation according to mode
 3. `/start #<num>`
 4. `/pull #<num>`
 5. `/docs #<num>`
 6. `/implement #<num>`
 7. `/commit #<num>`
-8. Local closeout by default: merge into local trunk (`main`/`master`), delete issue branch/worktree, do not push
+8. Local closeout by default:
+   - `worktree`: merge into local trunk, delete issue branch/worktree, do not push
+   - `inplace`: merge/fast-forward in-place branch flow, do not push unless requested
+
+## Child Skill Invocation Rules
+
+- Always invoke: `start`, `pull`, `docs`, `implement`, `commit`.
+- `start` behavior is mode-dependent:
+  - In `worktree` mode, run inside issue worktree branch context.
+  - In `inplace` mode, run in current workspace branch context.
+- Do not invoke any worktree-management subflow when `mode=inplace`.
 
 ## Two-Gate Mode (Required)
 
@@ -70,7 +97,7 @@ Do not ask for intermediate approvals unless blocked.
 - Pass the same issue number to all steps.
 - Proceed autonomously between gates.
 - Interrupt only for gate approval, missing input, or blocker decision.
-- Default closeout after Gate 2 approval is local integration only: commit, merge to local trunk, branch cleanup, no remote push.
+- Default closeout after Gate 2 approval is local integration only and no remote push.
 
 ## Pre-Commit Diff Presentation (Required)
 
@@ -92,7 +119,7 @@ Use exact prompts:
 - `Final diff ready. Reply: "Approved. Commit and merge." or "Approved. Push to branch."`
 
 Interpretation:
-- `Approved. Commit and merge.` => commit + local merge + cleanup, no push.
+- `Approved. Commit and merge.` => commit + local merge/cleanup, no push.
 - `Approved. Push to branch.` => commit + push branch.
 
 ## Revision Loops
