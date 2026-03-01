@@ -73,7 +73,7 @@ After preflight and before any workflow step:
 7. `/commit #<num>`
 8. Local closeout by default:
    - `worktree`: merge into local trunk, delete issue branch/worktree, do not push
-   - `inplace`: merge/fast-forward in-place branch flow, do not push unless requested
+   - `inplace`: merge/fast-forward in-place branch flow, then delete the issue branch locally; try `git branch -d` first and if blocked by upstream-merge safety after explicit commit+merge approval, use `git branch -D`; do not push unless requested
 
 ## Child Skill Invocation Rules
 
@@ -119,7 +119,7 @@ Use exact prompts:
 - `Final diff ready. Reply: "Approved. Commit and merge." or "Approved. Push to branch."`
 
 Interpretation:
-- `Approved. Commit and merge.` => commit + local merge/cleanup, no push.
+- `Approved. Commit and merge.` => commit + local merge/cleanup, no push; in `mode=inplace`, delete the issue branch after merge, try `git branch -d` first, and if blocked by upstream-merge safety, use `git branch -D`.
 - `Approved. Push to branch.` => commit + push branch.
 
 ## Revision Loops
@@ -136,4 +136,5 @@ After each step provide status, touched files, and blockers. End with branch, co
 - Respect repo approval and safety rules.
 - Do not run tests/install unless explicitly requested.
 - Do not force push unless explicitly requested.
+- In `mode=inplace`, after explicit commit+merge approval, force-delete the local issue branch only when safe delete is blocked solely by upstream-merge safety.
 - Never push during default closeout unless user explicitly asked to push.
