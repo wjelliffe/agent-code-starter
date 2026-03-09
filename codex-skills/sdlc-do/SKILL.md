@@ -1,13 +1,13 @@
 ---
 name: sdlc-do
-description: Orchestrate end-to-end issue delivery in strict Two-Gate Mode.
+description: Deliver a GitHub issue end-to-end in one self-contained Two-Gate workflow.
 metadata:
-  short-description: Run start/pull/docs/implement/commit with two approvals
+  short-description: Single-skill issue delivery with two approvals
 ---
 
-# SDLC Do (Orchestrator)
+# SDLC Do
 
-Execute the end-to-end issue workflow in strict Two-Gate Mode.
+Deliver an issue end to end without fanning out into `start`, `pull`, `docs`, `implement`, and `commit` unless the user explicitly asks for those skills separately.
 
 ## Usage
 
@@ -19,85 +19,46 @@ Execute the end-to-end issue workflow in strict Two-Gate Mode.
 ## Required Input
 
 - Issue number is required. If missing, ask once and stop.
-- Execution mode is optional:
-  - default: `inplace`
-  - optional override: `inplace`
+- Execution mode is optional. Default to `inplace`. Only use `worktree` when the user asks for issue isolation.
 
-## Execution Mode (Required)
+## Core Rules
 
-### mode=worktree (opt-in)
-- Use issue-isolated worktree/branch.
-- Create/reuse/switch to `../<repo-name>-issue-<num>` and `codex/issue-<num>-<slug>`.
-- Best for parallel thread execution.
-
-### mode=inplace (default)
-- Do not create/switch worktree.
-- Stay in current opened repository/workspace.
-- Create/switch only a local issue branch in-place (`codex/issue-<num>-<slug>`).
-- Best for sequential work where user wants editor/git visibility in a single workspace.
-
-## Preflight Worktree Isolation (Conditional)
-
-Apply this section only when `mode=worktree`.
-
-- Repository root: detect with `git rev-parse --show-toplevel`
-- Repository name: basename of repository root
-- Worktree path: `../<repo-name>-issue-<num>`
-- Branch name: `codex/issue-<num>-<slug>`
-- Base branch/ref: `origin/main` (fallback `main` if `origin/main` is unavailable)
-
-Behavior:
-
-- If already inside the matching worktree and on the matching branch, continue.
-- If not, create/switch to the target worktree before Step 1.
-- If target worktree exists, reuse only when branch matches and working tree is clean.
-- If target worktree exists but is dirty or on a mismatched branch, stop and ask user how to proceed.
-- Never force-delete worktrees, never reset hard, and never discard uncommitted changes.
-
-## Activation (Required)
-
-After preflight and before any workflow step:
-
-- In `worktree` mode: `cd` into issue worktree path, verify/switch to expected issue branch.
-- In `inplace` mode: verify current cwd is the user-requested repo/workspace, then verify/switch to expected issue branch in-place.
-- Confirm active path + branch + mode to the user in a status update.
+- Exactly two approvals are allowed:
+  - Gate 1: plan approval
+  - Gate 2: final diff approval before commit or push
+- Do not invoke child SDLC skills by default. Keep this workflow self-contained.
+- Stay on the repo branch convention: `codex/issue-<num>-<slug>`.
+- Do not create `docs/issues/ISSUE-<num>.md` unless the user asks for it or the issue is complex enough to need a durable checklist.
+- Do not run installs or tests unless the user explicitly asks or repo instructions require it.
+- Never reset hard, discard user changes, or force-delete a dirty worktree.
 
 ## Workflow Sequence
 
-1. Determine execution mode (`inplace` default or `worktree` override)
-2. Preflight + activation according to mode
-3. `/start #<num>`
-4. `/pull #<num>`
-5. `/docs #<num>`
-6. `/implement #<num>`
-7. `/commit #<num>`
-8. Local closeout by default:
-   - `worktree`: merge into local trunk, delete issue branch/worktree, do not push
-   - `inplace`: merge/fast-forward in-place branch flow, then delete the issue branch locally; try `git branch -d` first and if blocked by upstream-merge safety after explicit commit+merge approval, use `git branch -D`; do not push unless requested
-
-## Child Skill Invocation Rules
-
-- Always invoke: `start`, `pull`, `docs`, `implement`, `commit`.
-- `start` behavior is mode-dependent:
-  - In `worktree` mode, run inside issue worktree branch context.
-  - In `inplace` mode, run in current workspace branch context.
-- Do not invoke any worktree-management subflow when `mode=inplace`.
-
-## Two-Gate Mode (Required)
-
-Only two approvals are allowed in this flow:
-
-1. Gate 1: Plan Approval
-2. Gate 2: Final Code Approval (before commit/push)
-
-Do not ask for intermediate approvals unless blocked.
-
-## Orchestration Behavior
-
-- Pass the same issue number to all steps.
-- Proceed autonomously between gates.
-- Interrupt only for gate approval, missing input, or blocker decision.
-- Default closeout after Gate 2 approval is local integration only and no remote push.
+1. Resolve the issue number and execution mode.
+2. Preflight branch context.
+   - `inplace`: stay in the current repo, verify the tree is usable, and create or switch to `codex/issue-<num>-<slug>`.
+   - `worktree`: create, reuse, or switch to `../<repo-name>-issue-<num>` on the same branch name.
+   - Base from `origin/main` when available, otherwise `main`.
+   - If the target worktree exists but is dirty or on the wrong branch, stop and ask how to proceed.
+3. Fetch the issue once with `gh issue view <num> --json ...` and extract acceptance criteria, constraints, and open questions.
+4. Build one scoped plan that covers code, docs, risks, and verification. Keep it concise and execution-ready.
+5. Present Gate 1 with the exact prompt:
+   - `Plan ready. Reply: "Approved. Implement."`
+6. After approval, implement the full issue in one pass. Do not stop for extra approvals unless blocked.
+7. Update docs that are actually affected by the change. Avoid standalone doc-only subflows unless the user asked for them.
+8. Run only the verification the user asked for or that is already safe and available in the repo instructions.
+9. Present the pre-commit diff package:
+   - `git status --short`
+   - `git diff --stat`
+   - changed file list with absolute openable paths
+   - concise summary of what changed and why
+   - verification run and any gaps
+10. Present Gate 2 with the exact prompt:
+   - `Final diff ready. Reply: "Approved. Commit and merge." or "Approved. Push to branch."`
+11. After approval, commit with a conventional subject and `Fixes #<num>` in the body.
+12. Default closeout is local only:
+   - `Approved. Commit and merge.`: commit, integrate locally, clean up the local issue branch when safe, and do not push.
+   - `Approved. Push to branch.`: commit and push the branch.
 
 ## Pre-Commit Diff Presentation (Required)
 
@@ -111,16 +72,9 @@ Before Gate 2 approval prompt, always present a concrete diff review package:
 
 Do not ask for final approval until this diff package is shown.
 
-## Gate Prompts
-
-Use exact prompts:
-
-- `Plan ready. Reply: "Approved. Implement."`
-- `Final diff ready. Reply: "Approved. Commit and merge." or "Approved. Push to branch."`
-
 Interpretation:
-- `Approved. Commit and merge.` => commit + local merge/cleanup, no push; in `mode=inplace`, delete the issue branch after merge, try `git branch -d` first, and if blocked by upstream-merge safety, use `git branch -D`.
-- `Approved. Push to branch.` => commit + push branch.
+- `Approved. Commit and merge.` => commit, locally integrate, and clean up without pushing.
+- `Approved. Push to branch.` => commit and push the branch.
 
 ## Revision Loops
 
@@ -134,7 +88,6 @@ After each step provide status, touched files, and blockers. End with branch, co
 ## Rules
 
 - Respect repo approval and safety rules.
-- Do not run tests/install unless explicitly requested.
 - Do not force push unless explicitly requested.
-- In `mode=inplace`, after explicit commit+merge approval, force-delete the local issue branch only when safe delete is blocked solely by upstream-merge safety.
-- Never push during default closeout unless user explicitly asked to push.
+- In `mode=inplace`, after explicit commit+merge approval, use `git branch -d` first. Only use `git branch -D` when safe delete is blocked solely by upstream-merge safety.
+- Never push during default closeout unless the user explicitly asked to push.

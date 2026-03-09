@@ -1,6 +1,7 @@
+
 # Start New Work
 
-Initialize a new feature or bug fix branch following the project's development workflow.
+Initialize a new branch that matches the repo's `codex/...` naming convention.
 
 ## Usage
 
@@ -26,19 +27,16 @@ git pull origin main
 
 If checkout fails (e.g., detached HEAD, merge conflict), surface the error and ask for guidance.
 
-### 3. Create Feature Branch
+### 3. Create Branch
 
 Parse `$ARGUMENTS`.
 
 - If `$ARGUMENTS` includes an issue number (`#62` or `62`):
   - Fetch issue title: `gh issue view <num> --json title`
   - Generate deterministic branch name:
-    - default: `feat/issue-<num>-<kebab-issue-title>`
-    - if issue clearly indicates bug/fix: `fix/issue-<num>-<kebab-issue-title>`
+    - `codex/issue-<num>-<kebab-issue-title>`
 - If `$ARGUMENTS` is freeform text, convert to:
-  - Features: `feat/<kebab-case>`
-  - Bug fixes: `fix/<kebab-case>`
-  - Docs/chores: `docs/<name>` or `chore/<name>`
+  - `codex/<kebab-case>`
 - If no argument is provided, ask what work is being started.
 
 Create branch:
@@ -54,12 +52,12 @@ Print summary:
 ```text
 Branch: <resolved-branch-name>
 Status: Clean tree, up to date with main
-Next: /pull #<issue> (if issue-driven)
+Next: /implement #<issue> or /sdlc-do #<issue> for the full two-gate flow
 ```
 
 ## Rules
 
 - **Never skip the clean tree check.**
 - **Never commit directly to main.**
-- **Prefer issue-number branch naming when issue is provided.**
+- **Use the `codex/` prefix for every branch created by this skill.**
 - If `$ARGUMENTS` is empty, ask for intent before creating a branch.
