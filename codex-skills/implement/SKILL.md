@@ -1,60 +1,40 @@
 ---
 name: implement
-description: Implement an issue in scoped, approval-gated steps.
+description: Use when the user wants a quick direct change without the full issue-driven SDLC flow.
 metadata:
-  short-description: Plan then implement with explicit approval before edits
+  short-description: Execution-only fast path
 ---
 
-# Implement Issue
+# Implement
 
-Implement the requested issue in scoped, approval-gated steps.
+Use this skill for small direct changes when the user does not want the full DOR/DOD flow.
+
+Resolve `<workspace-root>` from the active repository, typically with `git rev-parse --show-toplevel`.
 
 ## Usage
 
 - `/implement #62`
 - `/implement 62`
+- `/implement fix this quickly`
+- `/implement make the change on main`
 
-## Procedure
+## Workflow
 
-### 1. Load issue context
-
-Use, in order:
-1. local issue doc `docs/issues/ISSUE-<num>.md` (preferred)
-2. `gh issue view <num>`
-3. current conversation context
-
-If issue number is missing, ask for it.
-
-### 2. Define scoped execution plan
-
-List only in-scope work for this issue:
-- files likely to change
-- implementation steps
-- risks/assumptions
-
-### 3. Approval gate before edits
-
-Before changing files, present:
-1. proposed file changes
-2. risks/assumptions
-3. follow-ups
-
-Wait for explicit approval.
-
-### 4. Implement
-
-Make minimal, incremental edits aligned to issue acceptance criteria.
-
-### 5. Report completion
-
-Provide:
-- summary of changes
-- files touched
-- how acceptance criteria were satisfied
-- any manual verification steps
+1. Read the local context.
+2. If a matching `<workspace-root>/.tmp/issue-<num>.json` already exists, use it. Do not fetch or normalize issue context unless the user asks.
+3. Define a small execution plan with files, risks, and verification.
+4. Stop for approval before edits.
+5. Implement directly in the current repo and current branch.
+6. Run `<workspace-root>/agentic-scripts/run_checks.sh`.
+7. Run `<workspace-root>/agentic-scripts/summarize_diff.sh`.
+8. Stop and report results.
 
 ## Rules
 
-- **Do not expand scope** beyond issue unless user approves.
-- **Do not run installs/tests** unless explicitly requested or approved.
+- Do not create worktrees.
+- Do not orchestrate the full SDLC flow.
+- No issue is required.
+- If the current branch is `main`, stay on `main`.
+- Commit only if the user explicitly asks.
+- If the user explicitly asks for a commit while on `main`, a direct commit to `main` is allowed for this fast path.
 - Respect repo approval-gate and safety rules.

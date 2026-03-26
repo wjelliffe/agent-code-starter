@@ -1,75 +1,69 @@
 ---
 name: issues
-description: Turn an approved implementation plan into detailed GitHub issues.
+description: Use when rough work needs a Definition of Ready pass that turns it into execution-ready stories or GitHub issues.
 metadata:
-  short-description: Draft and create issue breakdown from approved plan
+  short-description: Definition of Ready engine
 ---
 
-# Create GitHub Issues from Plan
+# Issues
 
-Turn an approved implementation plan into detailed GitHub issues that are specific enough to code from.
+Use this skill to produce execution-ready work. It is a Definition of Ready pass, not an implementation flow.
 
-## Procedure
+## Use It For
 
-### 1. Gather the Plan
+- turning a rough request, spec, or plan into small executable stories
+- normalizing issue context before implementation
+- checking whether a story is ready for `/sdlc-do` or `/implement`
+- optionally drafting GitHub issues after the work passes DOR
 
-Locate the implementation plan from one of these sources (in priority order):
-1. The current conversation context (if a plan was just approved)
-2. A plan file referenced in the conversation
-3. Relevant `spec/` or `docs/` files on the current branch
+## Inputs
 
-If no plan is found, ask the user what work needs to be broken into issues.
+Use the lightest available source of truth:
 
-### 2. Break into Issues
+1. current conversation context
+2. referenced local plan/spec files
+3. GitHub issue context normalized by `<workspace-root>/agentic-scripts/get_issue.sh <num>` into `<workspace-root>/.tmp/issue-<num>.json`
 
-Decompose the plan into discrete, implementable units. Each issue should represent a single logical change that could be its own commit. Guidelines:
+Resolve `<workspace-root>` from the active repository, typically with `git rev-parse --show-toplevel`.
 
-- **One concern per issue**. Do not mix schema changes with UI work.
-- **Dependency order**. Note which issues block others.
-- **Implementation detail**. Include:
-  - Files to create or modify
-  - Key decisions already made
-  - Acceptance criteria
+All agents working the same task should read the same structured `.tmp` artifact from that workspace.
 
-### 3. Draft Issues for Review
+## Workflow
 
-Before creating anything on GitHub, present the full list to the user and wait for explicit approval.
+1. Gather the request, constraints, dependencies, and success conditions.
+2. If the source is a GitHub issue, run `<workspace-root>/agentic-scripts/get_issue.sh <num>` and read `<workspace-root>/.tmp/issue-<num>.json`.
+3. Break the work into the smallest executable stories that do not need more planning.
+4. For each story, include:
+   - problem / objective
+   - value
+   - scope
+   - non-goals
+   - dependencies
+   - constraints
+   - acceptance criteria
+   - edge cases / risks
+   - test intent
+   - implementation hints (optional)
+5. Run the DOR checklist against each story.
+6. If any checklist item fails, revise the story instead of handing off vague work.
+7. Stop after presenting execution-ready stories. Only create GitHub issues if the user explicitly asks.
 
-### 4. Create Issues on GitHub
+## DOR Checklist
 
-Use the `gh` CLI to create each issue:
-
-```bash
-gh issue create --title "<title>" --body "<body>" --label "<labels>"
-```
-
-Title format: conventional commit style (`feat: ...`, `fix: ...`, `docs: ...`).
-
-Body format:
-
-```markdown
-## Summary
-<1-2 sentences>
-
-## Details
-- Files to create/modify: ...
-- Key decisions: ...
-- Dependencies: Blocked by #X
-
-## Acceptance Criteria
-- [ ] Criterion 1
-- [ ] Criterion 2
-```
-
-Labels should match existing repo conventions.
-
-### 5. Report Results
-
-After creation, print a summary table with issue number, title, labels, and blockers.
+- problem is clear
+- scope is bounded
+- acceptance criteria are concrete
+- dependencies known
+- constraints known
+- testability defined
+- risks identified
+- story is small and executable
+- no additional planning required
 
 ## Rules
 
-- **Always get approval before creating issues.**
-- **Reference issue numbers** in blocker fields after creation and update bodies if needed.
-- **Do not create issues for trivial steps.**
-- **Match existing label conventions**; check `gh label list` if unsure.
+- Do reasoning here. Do not implement here.
+- Deterministic execution belongs in `<workspace-root>/agentic-scripts`, not in the skill body.
+- Do not write transient planning material into `docs/` or any tracked scratch file.
+- Keep outputs compact and execution-ready.
+- If GitHub issue creation is requested, present the exact drafts first and wait for approval.

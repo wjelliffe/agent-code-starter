@@ -1,13 +1,13 @@
 ---
 name: sdlc-do
-description: Deliver a GitHub issue end-to-end in one self-contained Two-Gate workflow.
+description: Use when a GitHub issue should go through the full Definition of Done flow with shared issue JSON, approval gates, and deterministic runtime scripts.
 metadata:
-  short-description: Single-skill issue delivery with two approvals
+  short-description: Definition of Done engine
 ---
 
 # SDLC Do
 
-Deliver an issue end to end without fanning out into `start`, `pull`, `docs`, `implement`, and `commit` unless the user explicitly asks for those skills separately.
+Use this skill for issue-driven delivery that needs structured planning, controlled execution, and a Definition of Done check.
 
 ## Usage
 
@@ -16,78 +16,65 @@ Deliver an issue end to end without fanning out into `start`, `pull`, `docs`, `i
 - `/sdlc-do #62 mode=worktree`
 - `/sdlc-do #62 mode=inplace`
 
-## Required Input
+## Inputs
 
 - Issue number is required. If missing, ask once and stop.
-- Execution mode is optional. Default to `inplace`. Only use `worktree` when the user asks for issue isolation.
+- Execution mode is optional. Default to `inplace`. Use `worktree` only when the user explicitly wants isolation.
 
 ## Core Rules
 
-- Exactly two approvals are allowed:
+- Exactly two approvals:
   - Gate 1: plan approval
-  - Gate 2: final diff approval before commit or push
-- Do not invoke child SDLC skills by default. Keep this workflow self-contained.
-- Stay on the repo branch convention: `codex/issue-<num>-<slug>`.
-- Do not create `docs/issues/ISSUE-<num>.md` unless the user asks for it or the issue is complex enough to need a durable checklist.
-- Do not run installs or tests unless the user explicitly asks or repo instructions require it.
-- Never reset hard, discard user changes, or force-delete a dirty worktree.
+  - Gate 2: final review approval
+- Resolve `<workspace-root>` from the active repository, typically with `git rev-parse --show-toplevel`.
+- All agents use the same `<workspace-root>/.tmp/issue-<num>.json` input.
+- Deterministic actions must go through `<workspace-root>/agentic-scripts`.
+- Do not create transient issue docs in `docs/`.
+- Commit only if the user explicitly asks for it.
 
 ## Workflow Sequence
 
-1. Resolve the issue number and execution mode.
-2. Preflight branch context.
-   - `inplace`: stay in the current repo, verify the tree is usable, and create or switch to `codex/issue-<num>-<slug>`.
-   - `worktree`: create, reuse, or switch to `../<repo-name>-issue-<num>` on the same branch name.
-   - Base from `origin/main` when available, otherwise `main`.
-   - If the target worktree exists but is dirty or on the wrong branch, stop and ask how to proceed.
-3. Fetch the issue once with `gh issue view <num> --json ...` and extract acceptance criteria, constraints, and open questions.
-4. Build one scoped plan that covers code, docs, risks, and verification. Keep it concise and execution-ready.
-5. Present Gate 1 with the exact prompt:
-   - `Plan ready. Reply: "Approved. Implement."`
-6. After approval, implement the full issue in one pass. Do not stop for extra approvals unless blocked.
-7. Update docs that are actually affected by the change. Avoid standalone doc-only subflows unless the user asked for them.
-8. Run only the verification the user asked for or that is already safe and available in the repo instructions.
-9. Present the pre-commit diff package:
-   - `git status --short`
-   - `git diff --stat`
-   - changed file list with absolute openable paths
-   - concise summary of what changed and why
-   - verification run and any gaps
-10. Present Gate 2 with the exact prompt:
-   - `Final diff ready. Reply: "Approved. Commit and merge." or "Approved. Push to branch."`
-11. After approval, commit with a conventional subject and `Fixes #<num>` in the body.
-12. Default closeout is local only:
-   - `Approved. Commit and merge.`: commit, integrate locally, clean up the local issue branch when safe, and do not push.
-   - `Approved. Push to branch.`: commit and push the branch.
-
-## Pre-Commit Diff Presentation (Required)
-
-Before Gate 2 approval prompt, always present a concrete diff review package:
-
-- `git status --short`
-- `git diff --stat`
-- changed file list with openable file paths (so the user can inspect in Codex editor)
-- concise summary of what changed and why
-- any verification commands run and outcomes
-
-Do not ask for final approval until this diff package is shown.
-
-Interpretation:
-- `Approved. Commit and merge.` => commit, locally integrate, and clean up without pushing.
-- `Approved. Push to branch.` => commit and push the branch.
+1. Run `<workspace-root>/agentic-scripts/get_issue.sh <num>`.
+2. Read `<workspace-root>/.tmp/issue-<num>.json`.
+3. Build an execution plan that covers code, docs, risks, and verification.
+4. Stop for Gate 1 approval.
+5. Choose execution context:
+   - `inplace` default: stay in the current repo and working copy
+   - `worktree`: run `<workspace-root>/agentic-scripts/start_worktree.sh <num> worktree`
+6. Implement the issue.
+7. Run `<workspace-root>/agentic-scripts/run_checks.sh`.
+8. Run `<workspace-root>/agentic-scripts/summarize_diff.sh`.
+9. Run `<workspace-root>/agentic-scripts/validate_dod.sh <num>`.
+10. Present the final package:
+   - plan coverage
+   - checks output
+   - diff summary
+   - DOD validation
+   - remaining risks
+11. Stop for Gate 2 approval.
+12. Commit only if explicitly requested.
 
 ## Revision Loops
 
 - Gate 1 feedback: revise plan and return to Gate 1.
 - Gate 2 feedback: revise implementation and return to Gate 2.
 
-## Output
+## DOD Checklist
 
-After each step provide status, touched files, and blockers. End with branch, commit hash, AC coverage, and suggested next command `/ship`.
+- acceptance criteria satisfied
+- code implemented
+- checks/tests executed
+- no obvious regressions
+- docs updated if needed
+- diff summarized
+- risks noted
+- ready for review
+- worktree clean
+- DOD validator passes
 
 ## Rules
 
 - Respect repo approval and safety rules.
-- Do not force push unless explicitly requested.
-- In `mode=inplace`, after explicit commit+merge approval, use `git branch -d` first. Only use `git branch -D` when safe delete is blocked solely by upstream-merge safety.
-- Never push during default closeout unless the user explicitly asked to push.
+- Do not duplicate logic that belongs in `<workspace-root>/agentic-scripts`.
+- In multi-agent runs, all agents read the same issue JSON and should own disjoint file slices.
+- Keep the narration concise; the scripts provide the deterministic evidence.
