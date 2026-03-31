@@ -51,6 +51,28 @@ If revisions are requested:
 3. Replace deploy template workflow with your real CI/CD workflow.
 4. Confirm labels expected by commands exist in GitHub (`gh label list`).
 
+## Codex Bootstrap
+
+If you mainly use Codex, initialize a sibling repo with the portable starter files:
+
+```text
+./bootstrap_codex_project.sh <repo-name>
+```
+
+This copies:
+
+- `CODEX.md`
+- `.gitignore`
+- `agentic-scripts/`
+
+It also removes `AGENTS.md` from the target if present, so the default setup stays Codex-focused and avoids duplicated agent policy files.
+
+Add the optional GitHub workflow template with:
+
+```text
+./bootstrap_codex_project.sh <repo-name> --with-github
+```
+
 ## Notes
 
 - The local pulled issue mirror (`docs/issues/ISSUE-<n>.md`) is intentionally removed by `/commit` to avoid duplicating canonical issue content from GitHub.
