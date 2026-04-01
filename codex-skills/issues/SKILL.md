@@ -1,69 +1,51 @@
 ---
 name: issues
-description: Use when rough work needs a Definition of Ready pass that turns it into execution-ready stories or GitHub issues.
+description: Use when product or development input should be turned into clear, development-ready GitHub issue drafts with conditional discovery and one approval gate to write the issues.
 metadata:
-  short-description: Definition of Ready engine
+  short-description: PDLC to issue-definition engine
 ---
 
 # Issues
 
-Use this skill to produce execution-ready work. It is a Definition of Ready pass, not an implementation flow.
+Turn rough product or engineering input into development-ready GitHub issue drafts.
 
-## Use It For
+## Use It When
 
-- turning a rough request, spec, or plan into small executable stories
-- normalizing issue context before implementation
-- checking whether a story is ready for `/sdlc-do` or `/implement`
-- optionally drafting GitHub issues after the work passes DOR
+- turning an epic, user story, task, or bug into clear issue draft(s)
+- discovering missing requirements only when they matter
+- preparing work so development can take the issue without more planning
 
 ## Inputs
 
-Use the lightest available source of truth:
-
-1. current conversation context
-2. referenced local plan/spec files
-3. GitHub issue context normalized by `<workspace-root>/agentic-scripts/get_issue.sh <num>` into `<workspace-root>/.tmp/issue-<num>.json`
-
 Resolve `<workspace-root>` from the active repository, typically with `git rev-parse --show-toplevel`.
 
-All agents working the same task should read the same structured `.tmp` artifact from that workspace.
+- current conversation context
+- referenced local plan/spec files
+- shared `.tmp` planning artifacts in the workspace
+- issue JSON from `<workspace-root>/agentic-scripts/get_issue.sh`
 
-## Workflow
+## Runtime References
 
-1. Gather the request, constraints, dependencies, and success conditions.
-2. If the source is a GitHub issue, run `<workspace-root>/agentic-scripts/get_issue.sh <num>` and read `<workspace-root>/.tmp/issue-<num>.json`.
-3. Break the work into the smallest executable stories that do not need more planning.
-4. For each story, include:
-   - problem / objective
-   - value
-   - scope
-   - non-goals
-   - dependencies
-   - constraints
-   - acceptance criteria
-   - edge cases / risks
-   - test intent
-   - implementation hints (optional)
-5. Run the DOR checklist against each story.
-6. If any checklist item fails, revise the story instead of handing off vague work.
-7. Stop after presenting execution-ready stories. Only create GitHub issues if the user explicitly asks.
+- `classify_issue_input.sh`
+- `draft_issue_bundle.sh`
+- `validate_dor.sh`
+- `write_issues.sh`
 
-## DOR Checklist
+## Flow
 
-- problem is clear
-- scope is bounded
-- acceptance criteria are concrete
-- dependencies known
-- constraints known
-- testability defined
-- risks identified
-- story is small and executable
-- no additional planning required
+1. Inspect the input.
+2. Classify as `epic`, `user_story`, `task`, or `bug` with default `user_story`.
+3. Ask discovery questions only if they materially improve the issue definition.
+4. Normalize the planning context into `.tmp`.
+5. Draft the issue bundle and validate proportional DOR.
+6. Present the proposed issue breakdown.
+7. Stop for the only gate:
+   - `Proposed issue breakdown ready. Approve writing these issues.`
+8. On approval, write the issue(s). Otherwise revise and re-present.
 
 ## Rules
 
-- Do reasoning here. Do not implement here.
-- Deterministic execution belongs in `<workspace-root>/agentic-scripts`, not in the skill body.
-- Do not write transient planning material into `docs/` or any tracked scratch file.
-- Keep outputs compact and execution-ready.
-- If GitHub issue creation is requested, present the exact drafts first and wait for approval.
+- Keep discovery conditional.
+- Keep DOR proportional to issue size and type.
+- Deterministic work belongs in `<workspace-root>/agentic-scripts`.
+- The only formal gate in this skill is approval to write the proposed issue(s).

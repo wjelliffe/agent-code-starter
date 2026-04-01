@@ -1,98 +1,44 @@
-# Create GitHub Issues from Plan
+# Issues
 
-Turn an approved implementation plan into detailed GitHub issues that are specific enough to code from.
+Turn rough product or engineering input into development-ready GitHub issue drafts.
 
-## Procedure
+## Use It When
 
-### 1. Gather the Plan
+- turning an epic, user story, task, or bug into clear issue draft(s)
+- discovering missing requirements only when they matter
+- preparing work so development can take the issue without more planning
 
-Locate the implementation plan from one of these sources (in priority order):
-1. The current conversation context (if a plan was just approved)
-2. A plan file referenced in the conversation
-3. Relevant `spec/` or `docs/` files on the current branch
+## Inputs
 
-If no plan is found, ask the user what work needs to be broken into issues.
+Resolve `<workspace-root>` from the active repository, typically with `git rev-parse --show-toplevel`.
 
-### 2. Break into Issues
+- current conversation context
+- referenced local plan/spec files
+- shared `.tmp` planning artifacts in the workspace
+- issue JSON from `<workspace-root>/agentic-scripts/get_issue.sh`
 
-Decompose the plan into discrete, implementable units. Each issue should represent a single logical change that could be its own commit. Guidelines:
+## Runtime References
 
-- **One concern per issue** — don't mix schema changes with UI work
-- **Dependency order** — note which issues block others
-- **Implementation detail** — include enough context to code from:
-  - Files to create or modify
-  - Key decisions already made
-  - Acceptance criteria (what "done" looks like)
+- `classify_issue_input.sh`
+- `draft_issue_bundle.sh`
+- `validate_dor.sh`
+- `write_issues.sh`
 
-### 3. Draft Issues for Review
+## Flow
 
-Before creating anything on GitHub, present the full list to the user:
-
-```
-I'll create these issues:
-
-1. **feat: Add BugReport schema + migration**
-   Labels: area:database, size:small
-   Files: prisma/schema.prisma
-   Blocked by: none
-
-2. **feat: Add bug report submit API**
-   Labels: area:backend, size:small
-   Files: src/app/api/bug-reports/route.ts
-   Blocked by: #1
-   ...
-```
-
-Wait for explicit approval before creating issues. The user may want to adjust scope, combine issues, or reorder.
-
-### 4. Create Issues on GitHub
-
-Use the `gh` CLI to create each issue:
-
-```bash
-gh issue create --title "<title>" --body "<body>" --label "<labels>"
-```
-
-**Title format:** Use conventional commit style — `feat: ...`, `fix: ...`, `docs: ...`
-
-**Body format:**
-```markdown
-## Summary
-<1-2 sentences>
-
-## Details
-- Files to create/modify: ...
-- Key decisions: ...
-- Dependencies: Blocked by #X
-
-## Acceptance Criteria
-- [ ] Criterion 1
-- [ ] Criterion 2
-```
-
-**Labels** — use existing repo labels:
-- Area: `area:frontend`, `area:backend`, `area:database`
-- Size: `size:small`, `size:medium`, `size:large`
-- Type: `bug`, `enhancement`
-- Add `navigation`, `For Laura`, or other project-specific labels as appropriate
-
-### 5. Report Results
-
-After creation, print a summary table:
-
-```
-Created N issues:
-
-| # | Title | Labels | Blocked by |
-|---|-------|--------|------------|
-| 61 | feat: Add BugReport schema | area:database, size:small | — |
-| 62 | feat: Add submit API | area:backend, size:small | #61 |
-...
-```
+1. Inspect the input.
+2. Classify as `epic`, `user_story`, `task`, or `bug` with default `user_story`.
+3. Ask discovery questions only if they materially improve the issue definition.
+4. Normalize the planning context into `.tmp`.
+5. Draft the issue bundle and validate proportional DOR.
+6. Present the proposed issue breakdown.
+7. Stop for the only gate:
+   - `Proposed issue breakdown ready. Approve writing these issues.`
+8. On approval, write the issue(s). Otherwise revise and re-present.
 
 ## Rules
 
-- **Always get approval before creating issues.** Present the draft list first.
-- **Reference issue numbers** in "blocked by" fields after creation — update issue bodies if needed.
-- **Don't create issues for trivial steps** like "run npm install" — only for meaningful code changes.
-- **Match existing label conventions** — check `gh label list` if unsure what labels exist.
+- Keep discovery conditional.
+- Keep DOR proportional to issue size and type.
+- Deterministic work belongs in `<workspace-root>/agentic-scripts`.
+- The only formal gate in this skill is approval to write the proposed issue(s).

@@ -11,23 +11,25 @@ Use this skill for small direct changes when the user does not want the full DOR
 
 Resolve `<workspace-root>` from the active repository, typically with `git rev-parse --show-toplevel`.
 
-## Usage
+## Use It When
 
 - `/implement #62`
-- `/implement 62`
 - `/implement fix this quickly`
 - `/implement make the change on main`
 
-## Workflow
+## Runtime References
+
+- `run_checks.sh`
+- `summarize_diff.sh`
+
+## Flow
 
 1. Read the local context.
-2. If a matching `<workspace-root>/.tmp/issue-<num>.json` already exists, use it. Do not fetch or normalize issue context unless the user asks.
-3. Define a small execution plan with files, risks, and verification.
+2. Reuse a matching `.tmp` issue artifact if it already exists.
+3. Present a small execution plan.
 4. Stop for approval before edits.
 5. Implement directly in the current repo and current branch.
-6. Run `<workspace-root>/agentic-scripts/run_checks.sh`.
-7. Run `<workspace-root>/agentic-scripts/summarize_diff.sh`.
-8. Stop and report results.
+6. Run checks and summarize the diff.
 
 ## Rules
 
@@ -36,5 +38,4 @@ Resolve `<workspace-root>` from the active repository, typically with `git rev-p
 - No issue is required.
 - If the current branch is `main`, stay on `main`.
 - Commit only if the user explicitly asks.
-- If the user explicitly asks for a commit while on `main`, a direct commit to `main` is allowed for this fast path.
-- Respect repo approval-gate and safety rules.
+- A direct commit to `main` is allowed for this fast path when explicitly requested.

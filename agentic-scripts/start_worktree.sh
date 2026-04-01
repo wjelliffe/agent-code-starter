@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-issue_number="${1:-}"
+work_key="${1:-}"
 mode="${2:-inplace}"
 
-if [[ -z "$issue_number" ]]; then
-  echo "usage: $0 <issue-number> [inplace|worktree]" >&2
+if [[ -z "$work_key" ]]; then
+  echo "usage: $0 <work-key> [inplace|worktree]" >&2
   exit 1
 fi
 
@@ -21,27 +21,36 @@ fi
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd "${script_dir}/.." && pwd)"
-issue_json="${repo_root}/.tmp/issue-${issue_number}.json"
 
-if [[ ! -f "${issue_json}" ]]; then
-  echo "missing issue context: ${issue_json}" >&2
-  exit 1
-fi
-
-branch_name="$(
-ISSUE_JSON="${issue_json}" python3 <<'PY'
-import json
+slug="$(
+WORK_KEY="${work_key}" python3 <<'PY'
 import os
+import re
 
-with open(os.environ["ISSUE_JSON"], "r", encoding="utf-8") as handle:
-    payload = json.load(handle)
-
-slug = payload.get("normalized", {}).get("slug") or f"issue-{payload['issue']['number']}"
-print(f"codex/issue-{payload['issue']['number']}-{slug}")
+value = os.environ["WORK_KEY"].strip().lower()
+value = re.sub(r"[^a-z0-9]+", "-", value)
+print(value.strip("-") or "work")
 PY
 )"
 
+branch_name="codex/${slug}"
+
 repo_name="$(basename "${repo_root}")"
+
+trunk_branch="$(
+python3 <<'PY'
+import subprocess
+
+try:
+    ref = subprocess.check_output(
+        ["git", "symbolic-ref", "refs/remotes/origin/HEAD"],
+        text=True,
+    ).strip()
+    print(ref.rsplit("/", 1)[-1])
+except Exception:
+    print("main")
+PY
+)"
 
 cd "${repo_root}"
 
@@ -51,11 +60,12 @@ if [[ "${mode}" == "inplace" ]]; then
     if git show-ref --verify --quiet "refs/heads/${branch_name}"; then
       git checkout "${branch_name}" >/dev/null
     else
+      git checkout "${trunk_branch}" >/dev/null
       git checkout -b "${branch_name}" >/dev/null
     fi
   fi
 
-  BRANCH_NAME="${branch_name}" REPO_ROOT="${repo_root}" python3 <<'PY'
+  BRANCH_NAME="${branch_name}" REPO_ROOT="${repo_root}" TRUNK_BRANCH="${trunk_branch}" python3 <<'PY'
 import json
 import os
 
@@ -64,6 +74,7 @@ print(json.dumps({
     "mode": "inplace",
     "branch": os.environ["BRANCH_NAME"],
     "path": os.environ["REPO_ROOT"],
+    "trunk_branch": os.environ["TRUNK_BRANCH"],
 }))
 PY
   exit 0
@@ -74,7 +85,7 @@ if [[ "${mode}" != "worktree" ]]; then
   exit 1
 fi
 
-worktree_path="$(cd "${repo_root}/.." && pwd)/${repo_name}-issue-${issue_number}"
+worktree_path="$(cd "${repo_root}/.." && pwd)/${repo_name}-${slug}"
 
 if [[ -d "${worktree_path}" ]]; then
   existing_branch="$(git -C "${worktree_path}" branch --show-current 2>/dev/null || true)"
@@ -86,16 +97,11 @@ else
   if git show-ref --verify --quiet "refs/heads/${branch_name}"; then
     git worktree add "${worktree_path}" "${branch_name}" >/dev/null
   else
-    base_ref="main"
-    if ! git show-ref --verify --quiet "refs/heads/main"; then
-      current_branch="$(git branch --show-current)"
-      base_ref="${current_branch:-HEAD}"
-    fi
-    git worktree add -b "${branch_name}" "${worktree_path}" "${base_ref}" >/dev/null
+    git worktree add -b "${branch_name}" "${worktree_path}" "${trunk_branch}" >/dev/null
   fi
 fi
 
-BRANCH_NAME="${branch_name}" WORKTREE_PATH="${worktree_path}" python3 <<'PY'
+BRANCH_NAME="${branch_name}" WORKTREE_PATH="${worktree_path}" TRUNK_BRANCH="${trunk_branch}" python3 <<'PY'
 import json
 import os
 
@@ -104,5 +110,6 @@ print(json.dumps({
     "mode": "worktree",
     "branch": os.environ["BRANCH_NAME"],
     "path": os.environ["WORKTREE_PATH"],
+    "trunk_branch": os.environ["TRUNK_BRANCH"],
 }))
 PY

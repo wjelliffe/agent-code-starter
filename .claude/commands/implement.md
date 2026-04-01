@@ -1,53 +1,34 @@
-# Implement Issue
+# Implement
 
-Implement the requested issue in scoped, approval-gated steps.
+Use this command for small direct changes when the user does not want the full DOR/DOD flow.
 
-## Usage
+Resolve `<workspace-root>` from the active repository, typically with `git rev-parse --show-toplevel`.
+
+## Use It When
 
 - `/implement #62`
-- `/implement 62`
+- `/implement fix this quickly`
+- `/implement make the change on main`
 
-## Procedure
+## Runtime References
 
-### 1. Load issue context
+- `run_checks.sh`
+- `summarize_diff.sh`
 
-Use, in order:
-1. local issue doc `docs/issues/ISSUE-<num>.md` (preferred)
-2. `gh issue view <num>`
-3. current conversation context
+## Flow
 
-If issue number is missing, ask for it.
-
-### 2. Define scoped execution plan
-
-List only in-scope work for this issue:
-- files likely to change
-- implementation steps
-- risks/assumptions
-
-### 3. Approval gate before edits
-
-Before changing files, present:
-1. proposed file changes
-2. risks/assumptions
-3. follow-ups
-
-Wait for explicit approval.
-
-### 4. Implement
-
-Make minimal, incremental edits aligned to issue acceptance criteria.
-
-### 5. Report completion
-
-Provide:
-- summary of changes
-- files touched
-- how acceptance criteria were satisfied
-- any manual verification steps
+1. Read the local context.
+2. Reuse a matching `.tmp` issue artifact if it already exists.
+3. Present a small execution plan.
+4. Stop for approval before edits.
+5. Implement directly in the current repo and current branch.
+6. Run checks and summarize the diff.
 
 ## Rules
 
-- **Do not expand scope** beyond issue unless user approves.
-- **Do not run installs/tests** unless explicitly requested or approved.
-- Respect repo approval-gate and safety rules.
+- Do not create worktrees.
+- Do not orchestrate the full SDLC flow.
+- No issue is required.
+- If the current branch is `main`, stay on `main`.
+- Commit only if the user explicitly asks.
+- A direct commit to `main` is allowed for this fast path when explicitly requested.

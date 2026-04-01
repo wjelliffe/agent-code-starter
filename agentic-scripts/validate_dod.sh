@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-issue_number="${1:-}"
+context_path="${1:-}"
+checks_path="${2:-}"
+tests_path="${3:-}"
 
 if ! command -v git >/dev/null 2>&1; then
   echo "git is required" >&2
@@ -21,18 +23,16 @@ fi
 
 status_short="$(git status --short)"
 changed_files="$(git diff --name-only)"
-issue_json=""
-if [[ -n "${issue_number}" ]]; then
-  issue_json="${repo_root}/.tmp/issue-${issue_number}.json"
-fi
 
-ISSUE_JSON="${issue_json}" STATUS_SHORT="${status_short}" CHANGED_FILES="${changed_files}" python3 <<'PY'
+CONTEXT_PATH="${context_path}" CHECKS_PATH="${checks_path}" TESTS_PATH="${tests_path}" STATUS_SHORT="${status_short}" CHANGED_FILES="${changed_files}" python3 <<'PY'
 import json
 import os
 
 status_lines = [line for line in os.environ.get("STATUS_SHORT", "").splitlines() if line.strip()]
 changed_files = [line for line in os.environ.get("CHANGED_FILES", "").splitlines() if line.strip()]
-issue_json = os.environ.get("ISSUE_JSON", "")
+context_path = os.environ.get("CONTEXT_PATH", "")
+checks_path = os.environ.get("CHECKS_PATH", "")
+tests_path = os.environ.get("TESTS_PATH", "")
 
 checks = [
     {
@@ -47,20 +47,53 @@ checks = [
     },
 ]
 
-if issue_json:
+if context_path:
     checks.insert(1, {
-        "name": "issue_context_present",
-        "pass": os.path.exists(issue_json),
-        "detail": issue_json if os.path.exists(issue_json) else f"Missing {issue_json}",
+        "name": "context_present",
+        "pass": os.path.exists(context_path),
+        "detail": context_path if os.path.exists(context_path) else f"Missing {context_path}",
     })
 
+if checks_path:
+    if os.path.exists(checks_path):
+        with open(checks_path, "r", encoding="utf-8") as handle:
+            payload = json.load(handle)
+        checks.append({
+            "name": "checks_passed",
+            "pass": bool(payload.get("ok")),
+            "detail": checks_path,
+        })
+    else:
+        checks.append({
+            "name": "checks_passed",
+            "pass": False,
+            "detail": f"Missing {checks_path}",
+        })
+
+if tests_path:
+    if os.path.exists(tests_path):
+        with open(tests_path, "r", encoding="utf-8") as handle:
+            payload = json.load(handle)
+        checks.append({
+            "name": "tests_passed",
+            "pass": bool(payload.get("ok")),
+            "detail": tests_path,
+        })
+    else:
+        checks.append({
+            "name": "tests_passed",
+            "pass": False,
+            "detail": f"Missing {tests_path}",
+        })
+
 manual_items = [
+    "tests were written first when practical",
+    "review pass completed",
     "acceptance criteria satisfied",
     "no obvious regressions",
     "docs updated if needed",
     "risks noted",
-    "ready for review",
-    "worktree clean when claiming final done",
+    "ready for merge or pr",
 ]
 
 failed = [item["name"] for item in checks if not item["pass"]]
