@@ -126,15 +126,15 @@ if [[ "${mode}" == "merge" ]]; then
     git branch -d "${current_branch}" >/dev/null || true
   fi
 
-  WORKTREE_REMOVED="${worktree_removed}" python3 <<PY
+  COMMIT_SHA="${commit_sha}" TRUNK_BRANCH="${trunk_branch}" MERGED_BRANCH="${current_branch}" WORKTREE_REMOVED="${worktree_removed}" python3 <<'PY'
 import json
 import os
 print(json.dumps({
     "ok": True,
     "mode": "merge",
-    "commit": ${commit_sha@Q},
-    "trunk_branch": ${trunk_branch@Q},
-    "merged_branch": ${current_branch@Q},
+    "commit": os.environ["COMMIT_SHA"],
+    "trunk_branch": os.environ["TRUNK_BRANCH"],
+    "merged_branch": os.environ["MERGED_BRANCH"],
     "worktree_removed": os.environ["WORKTREE_REMOVED"] == "true",
 }))
 PY
@@ -177,14 +177,15 @@ else:
 PY
 )"
 
-python3 <<PY
+COMMIT_SHA="${commit_sha}" CURRENT_BRANCH="${current_branch}" TRUNK_BRANCH="${trunk_branch}" PR_URL="${pr_url}" python3 <<'PY'
 import json
+import os
 print(json.dumps({
     "ok": True,
     "mode": "pr",
-    "commit": ${commit_sha@Q},
-    "branch": ${current_branch@Q},
-    "trunk_branch": ${trunk_branch@Q},
-    "pr_url": ${pr_url@Q},
+    "commit": os.environ["COMMIT_SHA"],
+    "branch": os.environ["CURRENT_BRANCH"],
+    "trunk_branch": os.environ["TRUNK_BRANCH"],
+    "pr_url": os.environ["PR_URL"],
 }))
 PY

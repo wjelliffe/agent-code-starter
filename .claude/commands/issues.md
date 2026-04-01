@@ -30,7 +30,8 @@ Resolve `<workspace-root>` from the active repository, typically with `git rev-p
 2. Classify as `epic`, `user_story`, `task`, or `bug` with default `user_story`.
 3. Ask discovery questions only if they materially improve the issue definition.
 4. Normalize the planning context into `.tmp`.
-5. Draft the issue bundle and validate proportional DOR.
+5. Draft the issue bundle and validate proportional DOR using the template appropriate to the issue type.
+   - bugs should use the lean bug template
 6. Present the proposed issue breakdown.
 7. Stop for the only gate:
    - `Proposed issue breakdown ready. Approve writing these issues.`
