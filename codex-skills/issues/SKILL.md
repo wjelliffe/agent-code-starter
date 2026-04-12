@@ -1,6 +1,6 @@
 ---
 name: issues
-description: Use when product or development input should be turned into clear, development-ready GitHub issue drafts with conditional discovery and one approval gate to write the issues.
+description: Transform product or engineering input into clear, actionable GitHub issues using adaptive depth, conditional discovery, and a single approval gate.
 metadata:
   short-description: PDLC to issue-definition engine
 ---
@@ -33,16 +33,45 @@ Resolve `<workspace-root>` from the active repository, typically with `git rev-p
 
 ## Flow
 
+Apply only the depth required to make the work immediately actionable.
+
 1. Inspect the input.
 2. Classify as `epic`, `user_story`, `task`, or `bug` with default `user_story`.
-3. Ask discovery questions only if they materially improve the issue definition.
-4. Normalize the planning context into `.tmp`.
-5. Draft the issue bundle and validate proportional DOR using the template appropriate to the issue type.
-   - bugs should use the lean bug template
-   - epics must produce a parent epic issue plus explicit child story issues in the bundle
-6. Present the proposed issue breakdown.
+
+3. Determine required depth.
+
+Apply the minimum structure necessary to make the issue actionable:
+
+- If the input is already clear:
+  - draft a single issue directly
+  - include title, description, and concise acceptance criteria
+
+- If the input is ambiguous:
+  - ask only the most critical discovery questions
+  - do not over-interrogate
+
+- If the input represents multiple pieces of work:
+  - break into multiple issues
+
+- If the input is an epic:
+  - create a parent epic issue
+  - create child story issues
+  - attach them as GitHub sub-issues
+
+4. Normalize into `.tmp` only if:
+   - multiple issues are being created
+   - or the structure is non-trivial
+
+5. Draft the issue or issue bundle:
+   - bugs use the lean bug template
+   - larger work uses structured templates
+   - keep DOR proportional to scope
+
+6. Present the proposed issue(s).
+
 7. Stop for the only gate:
    - `Proposed issue breakdown ready. Approve writing these issues.`
+
 8. On approval, write the issue(s). Otherwise revise and re-present.
 
 ## Rules
@@ -52,3 +81,4 @@ Resolve `<workspace-root>` from the active repository, typically with `git rev-p
 - Deterministic work belongs in `<workspace-root>/agentic-scripts`.
 - The only formal gate in this skill is approval to write the proposed issue(s).
 - When drafting an epic with stories, create the stories as separate issues and attach them to the epic as GitHub sub-issues.
+- Apply the minimum necessary structure to make the issue actionable; avoid over-expansion.
