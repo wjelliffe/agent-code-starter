@@ -103,6 +103,7 @@ This template also supports Codex skills in `codex-skills/` when a repo needs lo
 - Repo-defined skill instructions live in `codex-skills/<skill-name>/SKILL.md`.
 - Repo trigger behavior is defined in `AGENTS.md`.
 - Global availability is from `~/.codex/skills` (app-level install).
+- Claude command mirrors live in `.claude/commands/<name>.md` when you want the same workflow available there.
 
 The lean active surface is:
 
@@ -117,3 +118,13 @@ $issues
 ```
 
 You can also use slash-style wording (`/issues`) or plain language that clearly matches the skill intent.
+
+### Skill Usage Rules
+
+Use the matching skill whenever the request clearly fits one of the supported workflows:
+
+- `$issues` or `/issues`: turn rough product or engineering input into issue drafts. If the work is an epic with stories, the flow must produce a parent epic issue plus separate child story issues attached as GitHub sub-issues.
+- `$sdlc-do` or `/sdlc-do`: run the full two-gate delivery flow for implementation work.
+- `$implement` or `/implement`: make a small direct change without the full SDLC ceremony.
+
+Keep the deterministic logic in `agentic-scripts/` and the skill/command contract in `codex-skills/` or `.claude/commands/`. When you update one of the shared issue-flow scripts, propagate the same change to every repo that carries that script so the command surface does not drift.

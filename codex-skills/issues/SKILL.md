@@ -39,6 +39,7 @@ Resolve `<workspace-root>` from the active repository, typically with `git rev-p
 4. Normalize the planning context into `.tmp`.
 5. Draft the issue bundle and validate proportional DOR using the template appropriate to the issue type.
    - bugs should use the lean bug template
+   - epics must produce a parent epic issue plus explicit child story issues in the bundle
 6. Present the proposed issue breakdown.
 7. Stop for the only gate:
    - `Proposed issue breakdown ready. Approve writing these issues.`
@@ -50,3 +51,4 @@ Resolve `<workspace-root>` from the active repository, typically with `git rev-p
 - Keep DOR proportional to issue size and type.
 - Deterministic work belongs in `<workspace-root>/agentic-scripts`.
 - The only formal gate in this skill is approval to write the proposed issue(s).
+- When drafting an epic with stories, create the stories as separate issues and attach them to the epic as GitHub sub-issues.
