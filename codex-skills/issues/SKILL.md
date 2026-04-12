@@ -37,41 +37,18 @@ Apply only the depth required to make the work immediately actionable.
 
 1. Inspect the input.
 2. Classify as `epic`, `user_story`, `task`, or `bug` with default `user_story`.
-
-3. Determine required depth.
-
-Apply the minimum structure necessary to make the issue actionable:
-
-- If the input is already clear:
-  - draft a single issue directly
-  - include title, description, and concise acceptance criteria
-
-- If the input is ambiguous:
-  - ask only the most critical discovery questions
-  - do not over-interrogate
-
-- If the input represents multiple pieces of work:
-  - break into multiple issues
-
-- If the input is an epic:
-  - create a parent epic issue
-  - create child story issues
-  - attach them as GitHub sub-issues
-
-4. Normalize into `.tmp` only if:
-   - multiple issues are being created
-   - or the structure is non-trivial
-
+3. Ask discovery questions only when they materially improve the issue definition.
+4. Normalize the issue input into `.tmp`.
+   - keep normalization lightweight for clear, single-issue requests
+   - use the same deterministic normalized shape for every issue flow
 5. Draft the issue or issue bundle:
    - bugs use the lean bug template
-   - larger work uses structured templates
+   - user stories, tasks, and bugs produce a single issue
+   - epics produce a parent epic issue plus child story issues
    - keep DOR proportional to scope
-
 6. Present the proposed issue(s).
-
 7. Stop for the only gate:
    - `Proposed issue breakdown ready. Approve writing these issues.`
-
 8. On approval, write the issue(s). Otherwise revise and re-present.
 
 ## Rules
@@ -82,3 +59,4 @@ Apply the minimum structure necessary to make the issue actionable:
 - The only formal gate in this skill is approval to write the proposed issue(s).
 - When drafting an epic with stories, create the stories as separate issues and attach them to the epic as GitHub sub-issues.
 - Apply the minimum necessary structure to make the issue actionable; avoid over-expansion.
+- Do not create multi-issue trees for bugs, tasks, or standalone user stories.

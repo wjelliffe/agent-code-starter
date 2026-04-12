@@ -6,6 +6,7 @@ context_path="${2:-}"
 
 if [[ "${mode}" != "merge" && "${mode}" != "pr" ]]; then
   echo "usage: $0 <merge|pr> <context-json>" >&2
+  echo "context-json may be full SDLC context or minimal FAST-success finalize context" >&2
   exit 1
 fi
 

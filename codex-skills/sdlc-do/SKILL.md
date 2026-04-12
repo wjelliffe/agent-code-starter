@@ -69,6 +69,7 @@ If the change:
 
 Do not generate a plan when FAST succeeds.
 Do not run `validate_dod.sh` when FAST succeeds.
+Do create the minimal finalize context required by `finalize_work.sh`.
 
 ### FAST Failure
 
@@ -124,4 +125,5 @@ If FAST fails:
 - Run `validate_dod.sh` only after FAST failure, within the full SDLC flow.
 - Do not broaden repository inspection beyond the smallest likely file set unless FAST failure conditions are met.
 - Do not normalize the full work context into `.tmp` until FAST has failed.
+- On FAST success, create only the minimal finalize context needed for deterministic closeout.
 - In FAST, do not run a broad test suite when a targeted check or targeted test can provide sufficient confidence.
