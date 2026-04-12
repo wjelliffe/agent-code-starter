@@ -16,13 +16,10 @@ Options:
   --no-codex            Do not copy CODEX.md.
   --no-gitignore        Do not copy .gitignore.
   --no-agentic-scripts  Do not copy agentic-scripts/.
-  --keep-agents         Preserve AGENTS.md in the target repo if it exists.
-
 Behavior:
   - copies CODEX.md
   - copies .gitignore
   - copies agentic-scripts/
-  - removes AGENTS.md from the target if it exists
   - does not copy starter .git/, .tmp/, or agent-specific docs
 EOF
 }
@@ -42,7 +39,6 @@ copy_codex="ask"
 copy_gitignore="ask"
 copy_scripts="ask"
 github_flag="ask"
-keep_agents="false"
 for arg in "$@"; do
   case "${arg}" in
     --with-github) copy_github="true"; github_flag="set" ;;
@@ -50,7 +46,6 @@ for arg in "$@"; do
     --no-codex) copy_codex="false" ;;
     --no-gitignore) copy_gitignore="false" ;;
     --no-agentic-scripts) copy_scripts="false" ;;
-    --keep-agents) keep_agents="true" ;;
     *)
       echo "unknown option: ${arg}" >&2
       usage >&2
@@ -125,9 +120,6 @@ if [[ "${github_flag}" == "ask" ]]; then
 fi
 
 mkdir -p "${target_dir}"
-if [[ "${keep_agents}" != "true" ]]; then
-  rm -f "${target_dir}/AGENTS.md"
-fi
 
 if [[ "${copy_codex}" == "true" ]]; then
   cp "${script_dir}/CODEX.md" "${target_dir}/CODEX.md"
@@ -149,7 +141,7 @@ if [[ "${copy_github}" == "true" ]]; then
   cp "${script_dir}/.github/workflows/deploy-template.yml" "${target_dir}/.github/workflows/deploy-template.yml"
 fi
 
-TARGET_DIR="${target_dir}" COPY_GITHUB="${copy_github}" COPY_CODEX="${copy_codex}" COPY_GITIGNORE="${copy_gitignore}" COPY_SCRIPTS="${copy_scripts}" KEEP_AGENTS="${keep_agents}" python3 <<'PY'
+TARGET_DIR="${target_dir}" COPY_GITHUB="${copy_github}" COPY_CODEX="${copy_codex}" COPY_GITIGNORE="${copy_gitignore}" COPY_SCRIPTS="${copy_scripts}" python3 <<'PY'
 import json
 import os
 
@@ -158,7 +150,6 @@ copy_github = os.environ["COPY_GITHUB"] == "true"
 copy_codex = os.environ["COPY_CODEX"] == "true"
 copy_gitignore = os.environ["COPY_GITIGNORE"] == "true"
 copy_scripts = os.environ["COPY_SCRIPTS"] == "true"
-keep_agents = os.environ["KEEP_AGENTS"] == "true"
 
 files = []
 
@@ -191,6 +182,6 @@ print(json.dumps({
     "ok": True,
     "target_dir": target_dir,
     "copied": files,
-    "removed": [] if keep_agents else ["AGENTS.md"],
+    "removed": [],
 }, indent=2))
 PY
