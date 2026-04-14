@@ -99,22 +99,33 @@ When escalating:
    - verification plan
    - risks, assumptions, and dependencies
 
-4. Prepare `inplace` or `worktree` execution context.
-5. Write tests first whenever practical, then implement.
-6. Run checks and tests.
-7. Perform a code review pass in the skill.
-8. If checks, tests, or review fail, loop back through implementation.
-9. Summarize diff and validate DOD.
+4. Determine the execution unit.
+   - standalone issue: execute the issue directly
+   - epic with child story issues: treat the epic as orchestration-only and execute the child story issues
+
+5. For epic execution:
+   - do not implement directly against the parent epic
+   - do not create a worktree for the parent epic in `mode=inplace`
+   - in `mode=worktree`, create one worktree per child story execution unit rather than a single parent-epic worktree
+   - dispatch each child story issue as its own `sdlc-do` execution unit
+   - require sub-agents to use `sdlc-do` for child story work rather than ad hoc implementation prompts
+
+6. Prepare `inplace` or `worktree` execution context for the actual execution unit.
+7. Write tests first whenever practical, then implement.
+8. Run checks and tests.
+9. Perform a code review pass in the skill.
+10. If checks, tests, or review fail, loop back through implementation.
+11. Summarize diff and validate DOD.
 
 ---
 
 ### Finalization
 
-10. Gate 2 presents exactly:
+12. Gate 2 presents exactly:
    - `Commit and merge.`
    - `Commit and push up as Pull Request.`
 
-11. Finalize with the runtime script.
+13. Finalize with the runtime script.
 
 ## Rules
 
@@ -130,3 +141,7 @@ When escalating:
 - Do not normalize the full work context into `.tmp` unless escalation occurs.
 - In lightweight execution, prefer targeted verification over broad test runs.
 - Do not broaden repository inspection beyond the smallest likely file set unless escalation conditions are met.
+- Epics are orchestration-only. Do not close parent epic issues automatically.
+- Child story issues are the execution units for epic delivery.
+- In `mode=worktree`, child story worktrees must be registered and cleaned up deterministically.
+- Commits and PRs for child story work must include the closing reference for the child issue so merging to trunk closes the story.
