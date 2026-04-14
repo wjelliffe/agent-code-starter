@@ -3,20 +3,21 @@ set -euo pipefail
 
 # propagate-agent-infra.sh
 #
-# Sync shared agentic-scripts and/or codex-skills from a canonical source repo
-# into one or more target repos, and optionally into ~/.codex/skills.
+# Sync shared agentic-scripts and/or Claude command mirrors from a canonical
+# source repo into one or more target repos, and optionally sync Codex skills
+# into the active Codex skills directory.
 #
 # Features:
 # - prompts if flags are omitted
 # - skips repos with local changes by default
-# - copies only changed files via rsync
+# - copies only when changes are detected
 # - stages, commits, and optionally pushes
 #
 # Example:
 #   ./propagate-agent-infra.sh \
 #     --repos "ch-trips,neurofork-vps,bis-www-site" \
 #     --sync-scripts yes \
-#     --sync-skills yes \
+#     --sync-claude yes \
 #     --sync-global-codex yes \
 #     --commit yes \
 #     --push no
@@ -27,20 +28,20 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SOURCE_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-REPOS_ROOT="${HOME}/repos"
-GLOBAL_CODEX_ROOT="${HOME}/.codex"
+REPOS_ROOT="$(cd "${SOURCE_ROOT}/.." && pwd)"
+GLOBAL_CODEX_ROOT="${CODEX_HOME:-${HOME}/.codex}"
 GLOBAL_CODEX_SKILLS_DIR="${GLOBAL_CODEX_ROOT}/skills"
 
 REPOS_CSV=""
 SYNC_SCRIPTS=""
-SYNC_SKILLS=""
+SYNC_CLAUDE=""
 SYNC_GLOBAL_CODEX=""
 DO_COMMIT=""
 DO_PUSH=""
 DRY_RUN=""
 SKIP_DIRTY=""
 
-COMMIT_MESSAGE="feat(agentic): update agentic scripts and skills for efficient agent coding"
+COMMIT_MESSAGE="feat(agentic): update shared agent infrastructure"
 
 #######################################
 # Helpers
@@ -53,11 +54,11 @@ Usage:
 
 Options:
   --source-root <path>         Canonical source repo root. Default: parent of this script
-  --repos-root <path>          Parent directory containing repos. Default: ~/repos
+  --repos-root <path>          Parent directory containing peer repos. Default: parent of source repo
   --repos "<a,b,c>"            Comma-separated repo directory names. If omitted, prompt.
   --sync-scripts <yes|no>      Sync agentic-scripts into target repos
-  --sync-skills <yes|no>       Sync codex-skills into target repos
-  --sync-global-codex <yes|no> Sync codex-skills into ~/.codex/skills
+  --sync-claude <yes|no>       Sync .claude/commands into target repos
+  --sync-global-codex <yes|no> Sync codex-skills into \$CODEX_HOME/skills or ~/.codex/skills
   --commit <yes|no>            Auto-commit repo changes
   --push <yes|no>              Auto-push after commit
   --skip-dirty <yes|no>        Skip repos with local changes. Default: yes
@@ -66,7 +67,7 @@ Options:
   --help                       Show this help
 
 Examples:
-  $0 --repos "ch-trips,neurofork-vps" --sync-scripts yes --sync-skills yes --sync-global-codex yes --commit yes --push no
+  $0 --repos "ch-trips,neurofork-vps" --sync-scripts yes --sync-claude yes --sync-global-codex yes --commit yes --push no
   $0
 EOF
 }
@@ -98,7 +99,7 @@ lower() {
 
 path_is_safe_global_codex_dir() {
   local path="$1"
-  [[ "$path" == "${HOME}/.codex/skills" ]]
+  [[ "$path" == "${GLOBAL_CODEX_SKILLS_DIR}" ]]
 }
 
 require_dir() {
@@ -109,18 +110,26 @@ require_dir() {
   fi
 }
 
-sync_dir() {
+sync_dir_if_changed() {
   local src="$1"
   local dest="$2"
   local dry_run="$3"
+  local diff_output
 
   mkdir -p "$dest"
 
+  diff_output="$(rsync -ani --delete "$src"/ "$dest"/)"
+  if [[ -z "$diff_output" ]]; then
+    return 1
+  fi
+
   if [[ "$dry_run" == "yes" ]]; then
-    rsync -avnc --delete "$src"/ "$dest"/
+    printf '%s\n' "$diff_output"
   else
     rsync -a --delete "$src"/ "$dest"/
   fi
+
+  return 0
 }
 
 repo_is_dirty() {
@@ -199,8 +208,15 @@ sync_global_codex_skills() {
     local dest="${global_skills_dir}/${skill_name}"
     mkdir -p "$dest"
 
+    local diff_output
+    diff_output="$(rsync -ani "$skill_dir"/ "$dest"/)"
+    if [[ -z "$diff_output" ]]; then
+      echo "No global Codex skill changes for ${skill_name}"
+      continue
+    fi
+
     if [[ "$dry_run" == "yes" ]]; then
-      rsync -avnc "$skill_dir"/ "$dest"/
+      printf '%s\n' "$diff_output"
     else
       rsync -a "$skill_dir"/ "$dest"/
     fi
@@ -229,8 +245,8 @@ while [[ $# -gt 0 ]]; do
       SYNC_SCRIPTS="$(lower "$2")"
       shift 2
       ;;
-    --sync-skills)
-      SYNC_SKILLS="$(lower "$2")"
+    --sync-claude)
+      SYNC_CLAUDE="$(lower "$2")"
       shift 2
       ;;
     --sync-global-codex)
@@ -274,14 +290,15 @@ done
 #######################################
 
 SOURCE_SCRIPTS_DIR="${SOURCE_ROOT}/agentic-scripts"
+SOURCE_CLAUDE_COMMANDS_DIR="${SOURCE_ROOT}/.claude/commands"
 SOURCE_SKILLS_DIR="${SOURCE_ROOT}/codex-skills"
 
 if [[ -z "$SYNC_SCRIPTS" ]]; then
   SYNC_SCRIPTS="$(prompt_yes_no "Sync agentic-scripts into target repos?" "yes")"
 fi
 
-if [[ -z "$SYNC_SKILLS" ]]; then
-  SYNC_SKILLS="$(prompt_yes_no "Sync codex-skills into target repos?" "yes")"
+if [[ -z "$SYNC_CLAUDE" ]]; then
+  SYNC_CLAUDE="$(prompt_yes_no "Sync .claude/commands into target repos?" "yes")"
 fi
 
 if [[ -z "$SYNC_GLOBAL_CODEX" ]]; then
@@ -308,7 +325,11 @@ if [[ "$SYNC_SCRIPTS" == "yes" ]]; then
   require_dir "$SOURCE_SCRIPTS_DIR"
 fi
 
-if [[ "$SYNC_SKILLS" == "yes" || "$SYNC_GLOBAL_CODEX" == "yes" ]]; then
+if [[ "$SYNC_CLAUDE" == "yes" ]]; then
+  require_dir "$SOURCE_CLAUDE_COMMANDS_DIR"
+fi
+
+if [[ "$SYNC_GLOBAL_CODEX" == "yes" ]]; then
   require_dir "$SOURCE_SKILLS_DIR"
 fi
 
@@ -369,18 +390,26 @@ for repo_name in "${TARGET_REPOS[@]}"; do
 
   if [[ "$SYNC_SCRIPTS" == "yes" ]]; then
     echo "Syncing agentic-scripts -> ${repo_path}/agentic-scripts"
-    sync_dir "$SOURCE_SCRIPTS_DIR" "${repo_path}/agentic-scripts" "$DRY_RUN"
-    changed_paths+=("agentic-scripts")
+    if sync_dir_if_changed "$SOURCE_SCRIPTS_DIR" "${repo_path}/agentic-scripts" "$DRY_RUN"; then
+      changed_paths+=("agentic-scripts")
+    else
+      echo "No agentic-scripts changes for ${repo_name}"
+    fi
   fi
 
-  if [[ "$SYNC_SKILLS" == "yes" ]]; then
-    echo "Syncing codex-skills -> ${repo_path}/codex-skills"
-    sync_dir "$SOURCE_SKILLS_DIR" "${repo_path}/codex-skills" "$DRY_RUN"
-    changed_paths+=("codex-skills")
+  if [[ "$SYNC_CLAUDE" == "yes" ]]; then
+    echo "Syncing .claude/commands -> ${repo_path}/.claude/commands"
+    if sync_dir_if_changed "$SOURCE_CLAUDE_COMMANDS_DIR" "${repo_path}/.claude/commands" "$DRY_RUN"; then
+      changed_paths+=(".claude/commands")
+    else
+      echo "No .claude/commands changes for ${repo_name}"
+    fi
   fi
 
   if [[ "$DRY_RUN" == "no" && ${#changed_paths[@]} -gt 0 ]]; then
     commit_and_push_repo "$repo_path" "$COMMIT_MESSAGE" "$DO_COMMIT" "$DO_PUSH" "${changed_paths[@]}"
+  elif [[ "$DRY_RUN" == "no" ]]; then
+    echo "No changes to commit for ${repo_name}"
   fi
 done
 

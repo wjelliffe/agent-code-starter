@@ -40,6 +40,10 @@ Only two approvals are expected:
    - `Commit and merge.`
    - or `Commit and push up as Pull Request.`
 
+For issue-based work, finalization should go through `agentic-scripts/finalize_work.sh` when the user asks to commit or finalize, including the lightweight `/sdlc-do` path. In this flow, a "closing comment" means an issue-closing footer in the commit body or PR body such as `Fixes #123` or `Closes #123`, not a separate GitHub issue comment.
+
+Do not use `gh issue close`, `gh issue comment`, or any separate GitHub issue close/comment action unless the user explicitly asks for that.
+
 If revisions are requested:
 - plan revisions return to Gate 1
 - code revisions return to Gate 2
