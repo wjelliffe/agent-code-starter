@@ -128,6 +128,8 @@ When escalating:
 13. Finalize with the runtime script.
    - for issue-based work, use `finalize_work.sh` whenever the user asks to commit or otherwise finalize, including the lightweight `/sdlc-do` path
    - for direct freeform requests without an issue reference, use `finalize_work.sh` when the user asks to commit/finalize and a minimal finalize context is required
+   - do not hand-roll `git commit` for issue-based `/sdlc-do` work
+   - if multiple issues are being delivered together, the finalize context must carry all closing issue references
 
 14. Treat "closing comment" as an issue-closing footer in the commit body or PR body, not as a separate GitHub issue comment.
    - valid examples: `Fixes #<issue>`, `Closes #<issue>`, `Resolves #<issue>`
@@ -136,6 +138,7 @@ When escalating:
 #### Finalization Example
 
 - user says: `commit with a closing comment`
+- for multi-issue delivery, include one closing footer per issue, for example `Fixes #21` and `Fixes #22`
 - for issue-based work, create the commit through `finalize_work.sh`
 - the resulting commit body must contain `Fixes #<issue>` or another valid closing footer
 - do not post a GitHub comment
@@ -160,5 +163,6 @@ When escalating:
 - In `mode=worktree`, child story worktrees must be registered and cleaned up deterministically.
 - Commits and PRs for child story work must include the closing reference for the child issue so merging to trunk closes the story.
 - For issue-based work, finalization goes through `finalize_work.sh` whenever the user asks to commit/finalize, even in the lightweight path.
+- For issue-based work, finalization must fail if no closing issue footer can be produced.
 - "Closing comment" means a commit-body or PR-body closing footer such as `Fixes #<issue>` or `Closes #<issue>`.
 - Do not call `gh issue close`, `gh issue comment`, or otherwise close/comment on the GitHub issue unless the user explicitly asks for that.
