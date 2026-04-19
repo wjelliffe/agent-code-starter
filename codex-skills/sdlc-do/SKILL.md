@@ -1,35 +1,41 @@
 ---
 name: sdlc-do
-description: Use when a GitHub issue or direct request should be executed with a short-plan-first approach that escalates into a full two-gate SDLC delivery flow only when needed.
+description: Execute a single issue or request using a strict, full SDLC flow with two approval gates and deterministic scripts.
 metadata:
-  short-description: Definition of Done engine
+  short-description: Single-issue SDLC execution
 ---
 
 # SDLC Do
 
-Use this skill for implementation delivery from request through closeout.
+Execute exactly one implementation unit from plan through finalization.
 
-Always start by proposing a minimal implementation plan. Execute only after intent is clear. Escalate into full SDLC rigor only when the work requires it.
+## Scope Constraints
 
-## Use It When
+This skill supports:
+- one GitHub issue
+- one direct request
 
-- plain-language implementation requests that clearly match this workflow
-- `/sdlc-do #62`
-- `$sdlc-do #62` in Codex threads
-- `/sdlc-do implement this request`
-- `/sdlc-do #62 mode=worktree`
-- `/sdlc-do #62 mode=inplace`
+This skill does NOT support:
+- epics
+- parent issues with children
+- multiple issues
+- orchestration
+- sub-agents
+
+If an epic or multiple issues are detected, STOP and say:
+
+`This skill only supports single issue execution. Epics are not supported.`
+
+---
 
 ## Inputs
 
-- GitHub issue number or direct freeform request
-- Execution mode is optional. Default to `inplace`. Use `worktree` only when the user explicitly wants isolation.
+- GitHub issue OR direct request
+- Optional: `mode=inplace` (default) or `mode=worktree`
 
-Resolve `<workspace-root>` from the active repository, typically with `git rev-parse --show-toplevel`.
+Resolve `<workspace-root>` via: --- git rev-parse –show-toplevel
 
-## Runtime References
-
-Use `get_issue.sh` only when the input is a GitHub issue reference rather than a direct freeform request.
+## Runtime Scripts
 
 - `get_issue.sh`
 - `prepare_sdlc_context.sh`
@@ -40,129 +46,124 @@ Use `get_issue.sh` only when the input is a GitHub issue reference rather than a
 - `validate_dod.sh`
 - `finalize_work.sh`
 
+---
+
 ## Gates
 
-- Gate 1: approve the plan (only when full SDLC is triggered)
-- Gate 2: approve the finished work before finalization
+- **Gate 1**: Plan approval (always required)
+- **Gate 2**: Final approval before commit
+
+---
 
 ## Flow
 
-### 0. Pre-Execution (Short Plan)
+### 0. Load Context
 
-Propose the smallest meaningful implementation plan before touching the codebase.
+If input is an issue:
+- run `get_issue.sh`
 
-The plan must be concise and practical:
-- likely files to modify
-- intended change
-- minimal verification approach
+Then:
+- run `prepare_sdlc_context.sh`
 
-Do not perform full context normalization.
-Do not run `prepare_sdlc_context.sh`.
-Do not generate full SDLC planning artifacts.
+If either fails:
+- STOP and report failure
 
 ---
 
-### Plan Outcome
+### 1. Plan (Gate 1)
 
-#### If the plan is trivial and clearly correct:
+Produce a minimal, execution-focused plan:
 
-- proceed directly to implementation
-- do not require Gate 1
-- begin execution
+- files to modify
+- intended changes
+- test strategy FIRST
+- TDD stance (required / preferred / not practical)
+- verification plan
+- risks / assumptions
 
-#### If the plan is unclear, risky, or non-trivial:
-
-Escalate to full SDLC.
-
-Triggers include:
-- ambiguity in requirements
-- multiple files or systems involved
-- schema, API, auth, or deployment impact
-- unclear verification strategy
-- design decisions required
-
-When escalating:
-- briefly state why escalation is required
-- proceed to Step 1
+Then stop and request approval.
 
 ---
 
-### Full SDLC Flow (only after escalation)
+### 2. Execution Setup
 
-1. Normalize the work context into `.tmp`.
-2. Build the plan in the skill.
+If `mode=worktree`:
+- run `start_worktree.sh`
 
-3. Gate 1 plan must include:
-   - intended files or areas to modify
-   - test strategy first
-   - whether TDD is required, preferred, or not practical
-   - verification plan
-   - risks, assumptions, and dependencies
-
-4. Determine the execution unit.
-   - standalone issue: execute the issue directly
-   - epic with child story issues: treat the epic as orchestration-only and execute the child story issues
-
-5. For epic execution:
-   - do not implement directly against the parent epic
-   - do not create a worktree for the parent epic in `mode=inplace`
-   - in `mode=worktree`, create one worktree per child story execution unit rather than a single parent-epic worktree
-   - dispatch each child story issue as its own `sdlc-do` execution unit
-   - require sub-agents to use `sdlc-do` for child story work rather than ad hoc implementation prompts
-
-6. Prepare `inplace` or `worktree` execution context for the actual execution unit.
-7. Write tests first whenever practical, then implement.
-8. Run checks and tests.
-9. Perform a code review pass in the skill.
-10. If checks, tests, or review fail, loop back through implementation.
-11. Summarize diff and validate DOD.
+If setup fails:
+- STOP and report failure
 
 ---
 
-### Finalization
+### 3. Implementation
 
-12. Gate 2 presents exactly:
-   - `Commit and merge.`
-   - `Commit and push up as Pull Request.`
+- write tests first when practical
+- implement changes
+- keep scope tightly bound to plan
 
-13. Finalize with the runtime script.
-   - for issue-based work, use `finalize_work.sh` whenever the user asks to commit or otherwise finalize, including the lightweight `/sdlc-do` path
-   - for direct freeform requests without an issue reference, use `finalize_work.sh` when the user asks to commit/finalize and a minimal finalize context is required
-   - do not hand-roll `git commit` for issue-based `/sdlc-do` work
-   - if multiple issues are being delivered together, the finalize context must carry all closing issue references
+---
 
-14. Treat "closing comment" as an issue-closing footer in the commit body or PR body, not as a separate GitHub issue comment.
-   - valid examples: `Fixes #<issue>`, `Closes #<issue>`, `Resolves #<issue>`
-   - do not interpret "closing comment" as `gh issue comment`
+### 4. Validation
 
-#### Finalization Example
+Run:
+- `run_checks.sh`
+- `run_tests.sh`
 
-- user says: `commit with a closing comment`
-- for multi-issue delivery, include one closing footer per issue, for example `Fixes #21` and `Fixes #22`
-- for issue-based work, create the commit through `finalize_work.sh`
-- the resulting commit body must contain `Fixes #<issue>` or another valid closing footer
-- do not post a GitHub comment
-- do not call `gh issue close`
+If either fails:
+- STOP and report failure
+
+---
+
+### 5. Diff + DoD
+
+Run:
+- `summarize_diff.sh`
+- `validate_dod.sh`
+
+If either fails:
+- STOP and report failure
+
+---
+
+### 6. Gate 2
+
+Present exactly:
+
+- `Commit and merge.`
+- `Commit and push up as Pull Request.`
+
+Wait for user selection.
+
+---
+
+### 7. Finalization
+
+Run:
+- `finalize_work.sh`
+
+Rules:
+- include closing footer if issue-based (`Fixes #<issue>`)
+- do NOT manually run git commands
+- do NOT call GitHub APIs directly
+
+If finalization fails:
+- STOP and report failure
+
+---
 
 ## Rules
 
-- Always propose a plan before implementation.
-- Do not modify the repository before intent is established.
-- Use Gate 1 only when full SDLC flow is triggered.
-- Use at most two approvals: Gate 1 (if escalated) and Gate 2 (finalization).
-- `inplace` means branch from trunk in the current worktree.
-- `worktree` means isolated branch/worktree for parallel work.
-- Planning, TDD judgment, review, and failure interpretation stay in the skill.
-- Deterministic execution belongs in `<workspace-root>/agentic-scripts`.
-- Run `validate_dod.sh` only in full SDLC flow.
-- Do not normalize the full work context into `.tmp` unless escalation occurs.
-- In lightweight execution, prefer targeted verification over broad test runs.
-- Do not broaden repository inspection beyond the smallest likely file set unless escalation conditions are met.
-- Epics are orchestration-only. Do not close parent epic issues automatically.
-- Child story issues are the execution units for epic delivery.
-- In `mode=worktree`, child story worktrees must be registered and cleaned up deterministically.
-- Commits and PRs for child story work must include the closing reference for the child issue so merging to trunk closes the story.
-- For issue-based work, finalization goes through `finalize_work.sh` whenever the user asks to commit/finalize, even in the lightweight path.
-- For issue-based work, finalization must fail if no closing issue footer can be produced.
-- "Closing comment" means a commit-body or PR-body closing footer such as `Fixes #<issue>` or `Closes #<issue>`.
-- Do not call `gh issue close`, `gh issue comment`, or otherwise close/comment on the GitHub issue unless the user explicitly asks for that.
+- Always require Gate 1 and Gate 2
+- No retry loops: fail once → stop
+- No epic handling
+- No child issue execution
+- No sub-agents
+- No orchestration
+- Keep planning minimal
+- Keep execution tight
+- Keep validation lightweight
+- Deterministic work belongs in scripts only
+- Do not broaden scope beyond the issue
+- Do not modify unrelated files
+- Do not continue after any failure
+- Do not auto-retry anything
