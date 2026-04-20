@@ -24,6 +24,12 @@ Claude commands live in `.claude/commands`. Codex uses the matching skills from 
 /sdlc-do #<issue>
 ```
 
+Grouped sibling tickets are also valid when they are one bounded delivery unit:
+
+```text
+/sdlc-do #30 and #31 together
+```
+
 You can also use direct requests:
 
 ```text
@@ -122,6 +128,6 @@ You can also use slash-style wording (`/issues`) or plain language that clearly 
 Use the matching skill whenever the request clearly fits one of the supported workflows:
 
 - `$issues` or `/issues`: turn rough product or engineering input into issue drafts. If the work is an epic with stories, the flow must produce a parent epic issue plus separate child story issues attached as GitHub sub-issues.
-- `$sdlc-do` or `/sdlc-do`: run the execution workflow for implementation work. Start with a minimal plan, execute directly when the change is trivial, and escalate into the full two-gate SDLC flow only when the work requires it.
+- `$sdlc-do` or `/sdlc-do`: run the execution workflow for one bounded implementation unit. That can be a single issue, a tightly related grouped issue set that should land together, or a direct request. Start with a minimal plan, execute directly when the change is trivial, and escalate into the full two-gate SDLC flow only when the work requires it.
 
 Keep the deterministic logic in `agentic-scripts/` and the skill/command contract in `codex-skills/` or `.claude/commands/`. When you update one of the shared issue-flow scripts, propagate the same change to every repo that carries that script so the command surface does not drift.
