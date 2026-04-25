@@ -18,11 +18,36 @@ The active command model is:
 
 Claude commands live in `.claude/commands`. Codex uses the matching skills from `~/.codex/skills` or repo-local overrides in `codex-skills/`.
 
-### Primary Delivery Flow
+### Primary Delivery Flow (Default: Fast Path)
 
 ```text
-/sdlc-do #<issue>
+
+/implement #<issue>
 ```
+
+## Execution Strategy (Critical)
+
+Default to `/implement`.
+
+Use `/implement` for:
+- Most feature work
+- Small to medium changes
+- Iteration and prototyping
+- Bug fixes
+- Any task where the implementation is already clear
+
+Use `/sdlc-do` ONLY when:
+- The change is high risk (auth, data integrity, infra)
+- Multiple subsystems are involved
+- The implementation approach is unclear
+- You explicitly want TDD or formal validation
+- Failure would be costly or hard to unwind
+
+If unsure:
+→ Start with `/implement`
+→ Escalate to `/sdlc-do` only if needed
+
+Never default to `/sdlc-do`.
 
 Grouped sibling tickets are also valid when they are one bounded delivery unit:
 
@@ -36,8 +61,9 @@ You can also use direct requests:
 /sdlc-do implement this request
 ```
 
-### Two-Gate Mode
+### Two-Gate Mode (SDLC Only)
 
+This applies ONLY when using `/sdlc-do`.
 Only two approvals are expected:
 
 1. Plan approval
@@ -128,6 +154,23 @@ You can also use slash-style wording (`/issues`) or plain language that clearly 
 Use the matching skill whenever the request clearly fits one of the supported workflows:
 
 - `$issues` or `/issues`: turn rough product or engineering input into issue drafts. If the work is an epic with stories, the flow must produce a parent epic issue plus separate child story issues attached as GitHub sub-issues.
-- `$sdlc-do` or `/sdlc-do`: run the execution workflow for one bounded implementation unit. That can be a single issue, a tightly related grouped issue set that should land together, or a direct request. Start with a minimal plan, execute directly when the change is trivial, and escalate into the full two-gate SDLC flow only when the work requires it.
+- `$implement` or `/implement`: default execution path. Use for most work. Minimal overhead, fast iteration, targeted validation.
+- `$sdlc-do` or `/sdlc-do`: high-ceremony execution path. Use only for complex, risky, or unclear work that benefits from planning, TDD, and formal validation.
 
 Keep the deterministic logic in `agentic-scripts/` and the skill/command contract in `codex-skills/` or `.claude/commands/`. When you update one of the shared issue-flow scripts, propagate the same change to every repo that carries that script so the command surface does not drift.
+
+## Anti-Overengineering Rule
+
+The system is intentionally biased toward speed.
+
+- Prefer fast iteration over perfect process
+- Prefer direct implementation over planning
+- Prefer targeted validation over full SDLC
+
+Do NOT use `/sdlc-do` by default.
+
+If the work can be completed safely without full SDLC:
+→ use `/implement`
+
+Escalation is allowed.
+Overhead is not required.
