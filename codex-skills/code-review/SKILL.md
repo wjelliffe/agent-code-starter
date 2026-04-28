@@ -5,7 +5,7 @@ metadata:
   short-description: Skeptical pre-commit review
 ---
 
-# Review Diff
+# Code Review
 
 Perform a code review of what's changed. Skeptical review only. Inspect the diff against the issue.
 
