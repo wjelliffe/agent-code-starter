@@ -1,182 +1,133 @@
 # Agent Code Starter
 
-> **Give your coding agent judgment, not just instructions.**
+> **Give your coding agent judgment, not bureaucracy.**
 
-[![CI](https://github.com/wjelliffe/agent-code-starter/actions/workflows/ci.yml/badge.svg)](https://github.com/wjelliffe/agent-code-starter/actions/workflows/ci.yml)
+Agent Code Starter is a small set of bounded software-delivery workflows backed by deterministic runtime helpers.
 
-Agent Code Starter is an adaptive software-delivery plugin for coding agents.
+The design goal is simple:
 
-It is built around a simple idea:
+> **The model decides what code to change. Scripts do everything deterministic. One task stays one task.**
 
-> **Move quick when you can; go deep when you need.**
+A normal implementation should not turn into a planner → implementer → reviewer → fixer → reviewer loop. ACS intentionally forbids that default behavior.
 
-We love the tools and workflows already out there. Agent Code Starter takes a deliberately speed-first approach: start with the quickest responsible path, apply clear litmus tests for risk, and step up the SDLC only when the change calls for it.
+## Four skills
 
-A copy change should not trigger an architecture summit.  
-An auth migration should not get a three-line plan and a thumbs-up.
+ACS has exactly four human-facing skills:
 
-**Maximum speed when speed is safe. Maximum rigor when rigor matters.**
+- **`issues`** — turn product/engineering input into actionable GitHub issues.
+- **`implement`** — cheap, bounded execution for one clear issue or request.
+- **`sdlc-do`** — explicit stricter execution for one bounded unit when you want the extra ceremony.
+- **`code-review`** — one-shot skeptical review. Review only; no edits.
 
----
+There is no `verify` skill, no debugging skill, no review-remediation skill, and no automatic routing skill. Those concerns are either inline execution rules or deterministic runtime behavior.
 
-## The whole idea
+## The execution contract
 
-```text
-                         ┌─────────────────────┐
- request / issue ───────▶│  Agent Code Starter │
-                         └──────────┬──────────┘
-                                    │
-                               assess risk
-                              ╱             ╲
-                             ╱               ╲
-                     ordinary work        risky work
-                          │                   │
-                     /implement          /sdlc-do
-                          │                   │
-                  inspect existing       explicit plan
-                  architecture           isolated worktree
-                  smallest change        deeper testing
-                  targeted tests         mandatory review
-                          │                   │
-                          └─────────┬─────────┘
-                                    ▼
-                             fresh evidence
-                                    │
-                                    ▼
-                              merge / PR
-```
+Both implementation flows are hard-bounded:
 
-The default is **not** "do the maximum process."
+- one primary agent
+- zero sub-agents
+- zero agent-team orchestration
+- zero automatic retries
+- at most one review invocation per execution
+- zero autonomous review → fix → re-review loops
+- no automatic escalation from `implement` to `sdlc-do`
+- stop on command failure and report evidence
 
-The default is **use the minimum process that reliably produces correct software**.
+If review finds blockers, ACS stops. Fixing them is a later explicit user action, not an invisible recursive loop.
 
----
-
-## Why it feels different
-
-### ⚡ Fast by default
-
-`implement` is the normal path.
-
-Read the issue. Inspect the existing code. Understand the architecture. Make the smallest correct change. Run the checks that matter. Keep moving.
-
-No mandatory design document because you changed a validation message.
-
-### 🧠 Rigor is adaptive
-
-Agent Code Starter steps up automatically when the work materially involves things like:
-
-- authentication or authorization
-- secrets, tokens, encryption, or security controls
-- schema migrations, backfills, or data integrity
-- transactions, concurrency, race conditions, or idempotency
-- billing or payments
-- production infrastructure
-- multiple coupled subsystems
-- an implementation approach that is genuinely unclear
-- an explicit request for strict TDD or a full SDLC pass
-
-That path is `sdlc-do`: plan, isolate, test deliberately, verify fully, perform a skeptical review, then finalize.
-
-### 🔍 Review the code that actually exists
-
-Code review is not "read the PR description and glance at the diff."
-
-The review workflow checks the linked issue and comments, current trunk, surrounding architecture, important invariants, tests, CI, regressions, and — when relevant — auth/authz, unsafe input, SQL, secrets, logging, state transitions, concurrency, migrations, and backfills.
-
-### 🐛 Root cause before patching
-
-When the cause of a failure is not already known, `systematic-debugging` reproduces, traces, forms a falsifiable hypothesis, and fixes the owning layer.
-
-Less agent whack-a-mole.
-
-### ✅ Evidence before "done"
-
-Agent Code Starter does not allow optimistic completion semantics.
-
-- "No tests found" is **not** "tests passed."
-- A failed PR creation is **not** success.
-- A clean linter is **not** proof that the build works.
-- Code that looks correct is **not** verified code.
-
-Fresh evidence before completion claims.
-
-### 🔌 Install the methodology once
-
-v2 is plugin-first.
-
-The engineering workflow lives in the plugin. Your application repository keeps the things that actually belong to the application: architecture, domain rules, constraints, tests, deployment conventions, and optional local overrides.
-
-No spraying the same agent scripts and prompts into every repo. No propagation commits every time the framework improves.
-
----
-
-## Two speeds
+## Two implementation modes
 
 | | `implement` | `sdlc-do` |
 |---|---|---|
-| Best for | Clear, bounded changes | Risky, cross-cutting, or ambiguous work |
-| Planning | Brief execution preview | Explicit approved plan |
-| Isolation | Safe feature branch | Worktree by default |
-| Testing | Targeted and proportional | Deliberate, deeper coverage |
-| TDD | When it adds value | Preferred for behavior changes |
-| Review | Optional / risk-driven | Mandatory |
-| Verification | Required | Required |
-| Goal | **Move fast safely** | **Make expensive mistakes hard** |
+| Use for | Clear single task | Explicit strict pass |
+| Plan approval | No | Yes |
+| Isolation | Minimal/safe | Branch/worktree |
+| Testing | Targeted | Deliberate |
+| Review | Optional, user-selected | Optional, user-selected |
+| Retry loops | Never | Never |
+| Sub-agents | Never | Never |
 
----
+The choice is explicit. ACS does not inspect keywords and silently promote a task into a larger workflow.
 
-## Skills
+## Deterministic runtime
 
-Agent Code Starter ships with one canonical skill set:
+`runtime/` contains the mechanics that should not consume model judgment:
 
-- **`issues`** — turn rough product or engineering input into actionable GitHub issues.
-- **`implement`** — default low-overhead implementation workflow.
-- **`sdlc-do`** — rigorous workflow for risky or ambiguous changes.
-- **`code-review`** — skeptical senior/staff-level review against requirements, trunk, architecture, tests, security, and CI.
-- **`systematic-debugging`** — reproduce, trace, isolate root cause, then fix.
-- **`verify`** — require fresh evidence before claiming completion.
-- **`address-review`** — evaluate review feedback technically, fix valid findings, verify, and respond.
+- issue normalization/writing
+- branch/worktree setup
+- check and test execution
+- diff summaries
+- Definition of Ready / Definition of Done validation
+- final commit/merge/PR behavior
 
----
+Runtime helpers execute against the target repository working directory. The plugin stays the methodology; the target repository stays the source of project truth.
 
-## Plugin-first architecture
+## Repository layout
 
 ```text
 Agent Code Starter
-├── .agents/plugins/    installable marketplace
-├── .codex-plugin/      Codex manifest
-├── .claude-plugin/     Claude Code manifest
-├── skills/             canonical agent behavior
-├── runtime/            deterministic Git/GitHub/verification helpers
-├── evals/              routing and behavioral scenarios
-└── tests/              plugin and runtime regression tests
-
-Your application repo
-├── AGENTS.md            project-specific truth
-├── .agent-code.json     optional overrides
-├── src/
-└── tests/
+├── .agents/plugins/     Codex/ChatGPT marketplace metadata
+├── .codex-plugin/       Codex plugin manifest
+├── .claude-plugin/      Claude Code plugin metadata
+├── skills/
+│   ├── issues/
+│   ├── implement/
+│   ├── sdlc-do/
+│   └── code-review/
+├── runtime/             deterministic helpers
+└── tests/               behavioral/runtime regression tests
 ```
 
-The separation is intentional:
+## Installation
 
-**Plugin = engineering methodology.**  
-**Repository = project truth.**
+### ChatGPT workspace
 
----
+Workspace admins can import this repository directly:
+
+1. Open **Workspace settings → Plugins**.
+2. Select **Add → Import marketplace**.
+3. Use `https://github.com/wjelliffe/agent-code-starter`.
+4. Use the default branch (`main`).
+5. Import the marketplace and make Agent Code Starter available to the desired users.
+
+### Personal Codex
+
+```bash
+codex plugin marketplace add wjelliffe/agent-code-starter --ref main
+codex plugin add agent-code-starter@agent-code-starter
+```
+
+Start a new Codex task after installation so the skills are rediscovered.
+
+### Claude Code
+
+```bash
+claude plugin marketplace add wjelliffe/agent-code-starter
+claude plugin install agent-code-starter@agent-code-starter
+```
+
+If Claude Code asks for a reload:
+
+```text
+/reload-plugins
+```
+
+To update later:
+
+```bash
+claude plugin marketplace update agent-code-starter
+claude plugin update agent-code-starter@agent-code-starter
+```
 
 ## Project overrides
 
-Most repositories need no Agent Code Starter files at all.
-
-When auto-detection is not enough, add a small `.agent-code.json`:
+Repositories may optionally provide `.agent-code.json` for deterministic command configuration:
 
 ```json
 {
   "trunk_branch": "main",
   "branch_prefix": "agent/",
-  "review_mode": "auto",
   "commands": {
     "checks": ["npm run lint", "npm run typecheck"],
     "tests": ["npm test"]
@@ -186,114 +137,12 @@ When auto-detection is not enough, add a small `.agent-code.json`:
 
 See [configuration](docs/configuration.md).
 
----
-
-## Installation
-
-### ChatGPT workspace — private, account-wide
-
-You do **not** need Agent Code Starter in OpenAI's public plugin directory to use it privately across ChatGPT surfaces.
-
-Workspace admins can import this repository directly:
-
-1. Open **Workspace settings → Plugins**.
-2. Select **Add → Import marketplace**.
-3. Use `https://github.com/wjelliffe/agent-code-starter` as the source.
-4. Leave **Path** empty and use the default branch, or specify `main`.
-5. Import the marketplace, then set Agent Code Starter to **Available** or **Installed** for the desired users.
-
-GitHub becomes the source of truth and workspace sync keeps the plugin updated.
-
-This is the closest supported experience to installing a directory plugin while keeping ACS private.
-
-### Personal Codex install
-
-For a local/personal Codex installation, add the GitHub marketplace and install ACS:
-
-```bash
-codex plugin marketplace add wjelliffe/agent-code-starter --ref main
-codex plugin add agent-code-starter@agent-code-starter
-```
-
-Then start a new Codex task so the installed skills are discovered.
-
-Personal Codex marketplaces are local to Codex; they are not the same as an account-wide ChatGPT workspace installation.
-
-### Claude Code
-
-ACS is also a native Claude Code plugin using the same canonical `skills/` content.
-
-Add the ACS marketplace from GitHub, then install the plugin:
-
-```bash
-claude plugin marketplace add wjelliffe/agent-code-starter
-claude plugin install agent-code-starter@agent-code-starter
-```
-
-If Claude Code tells you the new plugin needs a reload, run:
-
-```text
-/reload-plugins
-```
-
-You can also do the same thing interactively inside Claude Code:
-
-```text
-/plugin marketplace add wjelliffe/agent-code-starter
-/plugin install agent-code-starter@agent-code-starter
-```
-
-To pull marketplace changes later:
-
-```bash
-claude plugin marketplace update agent-code-starter
-claude plugin update agent-code-starter@agent-code-starter
-```
-
-Claude Code namespaces plugin skills under the plugin name, so ACS skills are available from the installed plugin rather than copied into each application repository.
-
----
-
-## Runtime guarantees
-
-Runtime helpers execute from the **target repository working directory** even though they live inside the plugin.
-
-Notable guarantees:
-
-- implementation work is never finalized directly on trunk
-- PR creation failure is a real failure
-- checks/tests report `pass`, `fail`, or `none-found`
-- finding no tests is never described as "tests passed"
-- dirty in-place work is rejected rather than overwritten
-- JS/TS, Python, Go, and Rust projects have lightweight auto-detection
-- project commands can override auto-detection through `.agent-code.json`
-
----
-
-## Migrating from v1
-
-If you used the original copied-script version, install and validate the plugin first. Then remove the old shared infrastructure from target repositories.
-
-See [migration](docs/migration.md).
-
----
-
 ## Development
 
-Run the framework regression suite with:
+Run the regression suite with:
 
 ```bash
 python3 -m unittest discover -s tests -v
 ```
 
-CI validates plugin structure, shell syntax, routing scenarios, runtime behavior, verification semantics, branch safety, and core skill contracts.
-
----
-
-## Philosophy
-
-**Move quick when you can; go deep when you need.**
-
-Agent Code Starter is not trying to make every coding task look important.
-
-It is trying to match the depth of the engineering process to the risk and complexity of the change in front of you.
+The tests intentionally enforce the four-skill surface and bounded execution contract so recursive orchestration cannot quietly creep back in.

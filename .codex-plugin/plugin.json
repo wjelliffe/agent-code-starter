@@ -1,7 +1,7 @@
 {
   "name": "agent-code-starter",
   "version": "2.0.0",
-  "description": "Adaptive software-delivery discipline for coding agents: fast for obvious work, rigorous for risky work.",
+  "description": "Bounded software-delivery workflows for coding agents backed by deterministic runtime helpers.",
   "author": {
     "name": "Will Jelliffe",
     "url": "https://github.com/wjelliffe"
@@ -12,16 +12,14 @@
     "coding-agents",
     "software-delivery",
     "code-review",
-    "debugging",
-    "verification",
-    "tdd"
+    "verification"
   ],
   "skills": "./skills/",
   "hooks": {},
   "interface": {
     "displayName": "Agent Code Starter",
-    "shortDescription": "Adaptive engineering workflows for coding agents",
-    "longDescription": "Use a lean implementation path for ordinary work and automatically step up to a rigorous SDLC path for auth, data, migrations, infrastructure, security, and other high-risk changes.",
+    "shortDescription": "Bounded engineering workflows for coding agents",
+    "longDescription": "Four explicit workflows for issue definition, cheap implementation, strict SDLC execution, and one-shot code review. No automatic routing or sub-agent orchestration.",
     "developerName": "Will Jelliffe",
     "category": "Developer Tools",
     "capabilities": ["Interactive", "Read", "Write"],
