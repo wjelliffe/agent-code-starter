@@ -8,7 +8,7 @@ Agent Code Starter is an adaptive software-delivery plugin for coding agents.
 
 It is built around a simple idea:
 
-> **Move as fast as the change safely allows. Add rigor when the change actually deserves it.**
+> **Move quick when you can; go deep when you need.**
 
 We love the tools and workflows already out there. Agent Code Starter takes a deliberately speed-first approach: start with the quickest responsible path, apply clear litmus tests for risk, and step up the SDLC only when the change calls for it.
 
@@ -247,8 +247,8 @@ CI validates plugin structure, shell syntax, routing scenarios, runtime behavior
 
 ## Philosophy
 
-**Execution is cheap. Judgment is scarce.**
+**Move quick when you can; go deep when you need.**
 
 Agent Code Starter is not trying to make every coding task look important.
 
-It is trying to make the agent recognize which tasks **are** important — and move extremely quickly through the ones that are not.
+It is trying to match the depth of the engineering process to the risk and complexity of the change in front of you.
