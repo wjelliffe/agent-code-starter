@@ -190,26 +190,38 @@ See [configuration](docs/configuration.md).
 
 ## Installation
 
-### Codex Desktop — Chat **and** Work
+### ChatGPT workspace — private, account-wide
 
-Agent Code Starter is a Codex plugin. The same installed plugin is available in both **Chat** and **Work** modes; you do not need Work just to use the skills.
+You do **not** need Agent Code Starter in OpenAI's public plugin directory to use it privately across ChatGPT surfaces.
 
-This repository is also its own Codex marketplace, so installation is two commands:
+Workspace admins can import this repository directly:
+
+1. Open **Workspace settings → Plugins**.
+2. Select **Add → Import marketplace**.
+3. Use `https://github.com/wjelliffe/agent-code-starter` as the source.
+4. Leave **Path** empty and use the default branch, or specify `main`.
+5. Import the marketplace, then set Agent Code Starter to **Available** or **Installed** for the desired users.
+
+GitHub becomes the source of truth and workspace sync keeps the plugin updated.
+
+This is the closest supported experience to installing a directory plugin while keeping ACS private.
+
+### Personal Codex install
+
+For a local/personal Codex installation, add the GitHub marketplace and install ACS:
 
 ```bash
 codex plugin marketplace add wjelliffe/agent-code-starter --ref main
 codex plugin add agent-code-starter@agent-code-starter
 ```
 
-Then start a new Codex chat/task so the installed skills are discovered.
+Then start a new Codex task so the installed skills are discovered.
 
-You can also use the Codex plugin UI: add `wjelliffe/agent-code-starter` as a marketplace, then install **Agent Code Starter** from it.
-
-No Agent Code Starter files need to be copied into your application repositories.
+Personal Codex marketplaces are local to Codex; they are not the same as an account-wide ChatGPT workspace installation.
 
 ### Claude Code
 
-The same repository includes `.claude-plugin/plugin.json` and uses the same canonical `skills/` content. Claude distribution remains separate from the Codex marketplace.
+The same repository includes `.claude-plugin/plugin.json` and uses the same canonical `skills/` content. Claude distribution remains separate from the OpenAI plugin marketplace.
 
 ---
 

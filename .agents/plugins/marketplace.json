@@ -7,15 +7,12 @@
     {
       "name": "agent-code-starter",
       "source": {
-        "source": "local",
-        "path": "."
+        "source": "url",
+        "url": "https://github.com/wjelliffe/agent-code-starter.git"
       },
       "policy": {
         "installation": "AVAILABLE",
-        "authentication": "ON_INSTALL",
-        "products": [
-          "CODEX"
-        ]
+        "authentication": "ON_INSTALL"
       },
       "category": "Developer Tools"
     }
