@@ -1,5 +1,4 @@
 import json
-import os
 import pathlib
 import subprocess
 import sys
@@ -44,16 +43,6 @@ class RepoFixture:
 
 
 class RuntimeTests(unittest.TestCase):
-    def test_route_fast_path(self):
-        proc = run([sys.executable, str(RUNTIME / "route.py"), "Fix the typo in the footer"])
-        self.assertEqual(proc.returncode, 0, proc.stderr)
-        self.assertEqual(json.loads(proc.stdout)["mode"], "implement")
-
-    def test_route_high_risk(self):
-        proc = run([sys.executable, str(RUNTIME / "route.py"), "Add OAuth authorization and token handling"])
-        self.assertEqual(proc.returncode, 0, proc.stderr)
-        self.assertEqual(json.loads(proc.stdout)["mode"], "sdlc-do")
-
     def test_no_tests_is_none_found_not_pass(self):
         with RepoFixture() as root:
             proc = run([sys.executable, str(RUNTIME / "verify.py"), "tests"], cwd=root)

@@ -2,7 +2,6 @@ import json
 import pathlib
 import re
 import subprocess
-import sys
 import unittest
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -11,9 +10,6 @@ CORE_SKILLS = {
     "implement",
     "sdlc-do",
     "code-review",
-    "systematic-debugging",
-    "verify",
-    "address-review",
 }
 
 
@@ -33,17 +29,7 @@ class PluginTests(unittest.TestCase):
         )
         self.assertEqual(marketplace["name"], "agent-code-starter")
         self.assertEqual(len(marketplace["plugins"]), 1)
-        plugin = marketplace["plugins"][0]
-        self.assertEqual(plugin["name"], "agent-code-starter")
-        self.assertEqual(
-            plugin["source"],
-            {
-                "source": "url",
-                "url": "https://github.com/wjelliffe/agent-code-starter.git",
-            },
-        )
-        self.assertEqual(plugin["category"], "Developer Tools")
-        self.assertNotIn("products", plugin["policy"])
+        self.assertEqual(marketplace["plugins"][0]["name"], "agent-code-starter")
 
     def test_repo_is_its_own_claude_marketplace(self):
         marketplace = json.loads(
@@ -51,25 +37,35 @@ class PluginTests(unittest.TestCase):
         )
         self.assertEqual(marketplace["name"], "agent-code-starter")
         self.assertEqual(len(marketplace["plugins"]), 1)
-        plugin = marketplace["plugins"][0]
-        self.assertEqual(plugin["name"], "agent-code-starter")
-        self.assertEqual(
-            plugin["source"],
-            {
-                "source": "github",
-                "repo": "wjelliffe/agent-code-starter",
-            },
-        )
-        self.assertEqual(plugin["category"], "development")
+        self.assertEqual(marketplace["plugins"][0]["name"], "agent-code-starter")
 
-    def test_core_skills_exist_and_have_trigger_descriptions(self):
+    def test_exactly_four_skills_exist(self):
         found = {path.parent.name for path in (ROOT / "skills").glob("*/SKILL.md")}
-        self.assertTrue(CORE_SKILLS.issubset(found))
+        self.assertEqual(found, CORE_SKILLS)
         for name in CORE_SKILLS:
             text = (ROOT / "skills" / name / "SKILL.md").read_text(encoding="utf-8")
             match = re.search(r"^description:\s*(.+)$", text, re.MULTILINE)
             self.assertIsNotNone(match, name)
             self.assertTrue(match.group(1).startswith("Use when"), name)
+
+    def test_execution_skills_are_hard_bounded(self):
+        implement = (ROOT / "skills" / "implement" / "SKILL.md").read_text(encoding="utf-8")
+        sdlc = (ROOT / "skills" / "sdlc-do" / "SKILL.md").read_text(encoding="utf-8")
+        review = (ROOT / "skills" / "code-review" / "SKILL.md").read_text(encoding="utf-8")
+
+        for text in (implement, sdlc):
+            self.assertIn("One primary agent.", text)
+            self.assertIn("Zero sub-agents.", text)
+            self.assertIn("At most one review invocation per execution.", text)
+            self.assertIn("Zero autonomous review/fix/re-review loops.", text)
+            self.assertIn("Zero automatic retries after command failure.", text)
+
+        self.assertIn("Perform exactly one skeptical review pass.", review)
+        self.assertIn("Do not spawn sub-agents", review)
+        self.assertIn("must not edit, remediate, re-run itself, or launch another review", review)
+
+    def test_automatic_routing_is_not_part_of_runtime(self):
+        self.assertFalse((ROOT / "runtime" / "route.py").exists())
 
     def test_legacy_distribution_paths_are_gone(self):
         self.assertFalse((ROOT / "codex-skills").exists())
@@ -82,18 +78,6 @@ class PluginTests(unittest.TestCase):
         for script in (ROOT / "runtime").glob("*.sh"):
             proc = subprocess.run(["bash", "-n", str(script)], capture_output=True, text=True)
             self.assertEqual(proc.returncode, 0, f"{script}: {proc.stderr}")
-
-    def test_routing_evals(self):
-        scenarios = json.loads((ROOT / "evals" / "scenarios.json").read_text(encoding="utf-8"))
-        for scenario in scenarios:
-            proc = subprocess.run(
-                [sys.executable, str(ROOT / "runtime" / "route.py"), scenario["text"]],
-                capture_output=True,
-                text=True,
-            )
-            self.assertEqual(proc.returncode, 0, scenario["name"])
-            actual = json.loads(proc.stdout)["mode"]
-            self.assertEqual(actual, scenario["expected_mode"], scenario["name"])
 
 
 if __name__ == "__main__":

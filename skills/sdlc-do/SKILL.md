@@ -1,64 +1,76 @@
 ---
 name: sdlc-do
-description: Use when implementing high-risk, cross-cutting, security-sensitive, data-sensitive, infrastructure, migration, or ambiguous work that benefits from explicit planning and rigorous verification.
+description: Use when explicitly executing one bounded implementation unit with a stricter plan, isolation, testing, and verification flow.
+metadata:
+  short-description: Bounded strict SDLC execution
 ---
 
 # SDLC Do
 
-Execute one bounded delivery unit with higher ceremony because failure is expensive or the implementation is genuinely unclear.
+Execute exactly one bounded implementation unit with higher ceremony. This is an explicit workflow, not an automatic escalation target.
 
-Bundled runtime lives at `../../runtime/` relative to this `SKILL.md`. Resolve that path from the installed skill file; run runtime commands with the target repository as the working directory. Invoke bundled shell helpers through `bash` (for example, `bash <plugin-root>/runtime/start_worktree.sh ...`) because plugin packaging may not preserve executable bits.
+Bundled deterministic helpers live at `../../runtime/` relative to this skill. Run them with the target repository as the working directory.
 
-## Gate 1: plan
+## Scope
 
-Load the issue/request plus project architecture before proposing a plan.
+Supports one GitHub issue, one tightly coupled issue set intended to land together, or one direct request.
 
-The plan must identify:
+Does not support epics, parent-issue orchestration, unrelated batching, delegation, agent teams, or sub-agents. Do not spawn another agent for implementation, testing, debugging, or review.
 
-- files/components involved
-- invariants and security/data constraints
-- implementation sequence
-- test strategy and TDD stance
-- migration/backfill/rollback implications when relevant
-- verification and review strategy
-- assumptions that could invalidate the approach
+## Gates
 
-Require approval of this plan before edits.
+- Gate 1: plan approval.
+- Gate 2: final approval.
 
-## Isolated execution
+## Flow
 
-Create a worktree by default with `start_worktree.sh <work-key> worktree <context-path>`.
+1. **Load context once**
+   - Use `get_issue.sh` for issue input.
+   - Use `prepare_sdlc_context.sh` once to normalize execution context.
+   - If either fails, stop. Do not retry automatically.
 
-For behavior changes, prefer a real red-green cycle when practical. For migrations, authorization, concurrency, state machines, and data integrity, tests must cover failure and invalid-state paths, not only happy paths.
+2. **Plan — Gate 1**
+   Produce a concise execution plan covering files/components, invariants, implementation sequence, tests, verification, and material risks. Wait for approval.
 
-Keep the implementation bounded to the approved plan. If the architecture must change materially, surface the change rather than silently expanding scope.
+3. **Execution setup**
+   Use `start_worktree.sh` in the selected mode. If setup fails, stop.
 
-## Verification
+4. **Implement**
+   - Keep work within the approved plan.
+   - Prefer tests first where they materially reduce risk.
+   - Investigate unclear failures in this same agent. Do not delegate.
 
-Run all configured/detected checks and tests. A missing test command is `none-found`, not success; on the strict path, explicitly justify proceeding without executable tests.
+5. **Validate once**
+   - Run `run_checks.sh` once.
+   - Run `run_tests.sh` once.
+   - If either fails, stop and report the evidence. Do not enter an autonomous repair/retry loop.
 
-Run `validate_dod.sh`, inspect the full diff, and invoke `verify`.
+6. **Diff + DoD**
+   - Run `summarize_diff.sh`.
+   - Run `validate_dod.sh` once.
+   - If validation fails, stop.
 
-## Mandatory review
+7. **Gate 2**
+   Present exactly:
+   - `Execute code review.`
+   - `Commit and merge.`
+   - `Commit and push up as Pull Request.`
 
-Invoke `code-review` before final approval. Review must use current trunk, issue context/comments, surrounding architecture, tests, and available CI evidence.
+   Wait for the user.
 
-Fix blocking findings, re-run the covering checks/tests, and re-review. If repeated fixes do not converge, reassess the plan/root cause instead of churning.
+   If the user selects review, invoke `code-review` exactly once. If it returns blockers, stop and return the findings. Do not fix and re-review autonomously. A later explicit user request may address them as a new bounded pass.
 
-## Gate 2: finalization
+8. **Finalize**
+   Use `finalize_work.sh` for the selected finalization action. If it fails, stop. Do not retry automatically.
 
-After verification and clean review, present:
+## Hard limits
 
-- `Commit and merge.`
-- `Commit and push up as Pull Request.`
-
-Finalize only through `finalize_work.sh`.
-
-## Rules
-
-- High rigor does not mean unrelated cleanup.
-- Important invariants belong at the service/data boundary where feasible.
-- Treat all external input as untrusted.
-- Parameterize data access and avoid secret/token leakage.
-- Preserve backward compatibility unless the approved plan says otherwise.
-- No mandatory per-task subagent/reviewer choreography; use additional agents only when they materially improve the work.
+- One primary agent.
+- Zero sub-agents.
+- Zero orchestration.
+- At most one review invocation per execution.
+- Zero autonomous review/fix/re-review loops.
+- Zero automatic retries after command failure.
+- Deterministic work belongs in runtime helpers.
+- Do not broaden scope beyond the approved bounded unit.
+- Do not modify unrelated files.

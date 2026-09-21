@@ -1,68 +1,70 @@
 ---
 name: implement
-description: Use when implementing one clear GitHub issue or direct request with minimal overhead; this is the default delivery path unless material risk or ambiguity requires sdlc-do.
+description: Use when executing one clear GitHub issue or direct request with a minimal, low-token flow using deterministic runtime helpers and one final approval gate.
+metadata:
+  short-description: Cheap single-task implementation
 ---
 
 # Implement
 
-Execute one bounded change cheaply without sacrificing correctness.
+Execute exactly one bounded implementation unit with minimal overhead.
 
-Bundled runtime lives at `../../runtime/` relative to this `SKILL.md`. Resolve that path from the installed skill file; run runtime commands with the target repository as the working directory. Invoke bundled shell helpers through `bash` (for example, `bash <plugin-root>/runtime/start_worktree.sh ...`) because plugin packaging may not preserve executable bits.
+Bundled deterministic helpers live at `../../runtime/` relative to this skill. Run them with the target repository as the working directory.
 
-## 1. Read before editing
+## Scope
 
-For an issue, load the issue, comments, parent/child context, dependencies, acceptance criteria, and test intent. For a direct request, inspect the relevant code and project instructions.
+Supports one GitHub issue or one direct request.
 
-Use `route.py` as an advisory risk signal. Escalate to `sdlc-do` before editing when the work materially involves auth/authz, security controls, secrets/tokens, migrations/backfills, data integrity, transactions/concurrency, payments, production infrastructure, coupled subsystems, an unclear approach, or an explicit strict/TDD request.
+Does not support epics, multiple unrelated issues, orchestration, delegation, agent teams, or sub-agents. Do not spawn another agent for implementation, testing, debugging, or review.
 
-Do not escalate ordinary work merely because the repository is important.
+If the request is not one bounded unit, stop and ask the user to split it or explicitly choose `sdlc-do`.
 
-## 2. Create a safe branch
+## Flow
 
-Use `start_worktree.sh <work-key> inplace <context-path>`. Never implement directly on trunk. If the working tree is dirty and safe isolation cannot be established, stop rather than overwrite unrelated work.
+1. **Load**
+   - For an issue, run `get_issue.sh`.
+   - If loading fails, stop. Do not retry automatically.
 
-## 3. Execution preview
+2. **Execution preview**
+   - State likely files, intended change, and minimal verification.
+   - Do not add a plan approval gate.
 
-State briefly:
+3. **Implement**
+   - Make the smallest correct change.
+   - Do not expand scope.
+   - If the cause of a bug is unclear, investigate it in this same agent before editing. Do not invoke another skill or agent.
 
-- intended change
-- likely files
-- relevant verification
+4. **Validate once**
+   - Run `run_checks.sh` once.
+   - Run `run_tests.sh` only when relevant tests exist, behavior changed, or the issue requires tests.
+   - If either fails, stop and report the failure. Do not enter an autonomous repair/retry loop.
 
-Do not add a plan-approval gate on the fast path.
+5. **Summarize**
+   - Run `summarize_diff.sh`.
+   - Present files changed, what changed, verification results, and known risks.
 
-## 4. Implement
+6. **Final gate**
+   Present exactly:
+   - `Execute code review.`
+   - `Commit and merge.`
+   - `Commit and push up as Pull Request.`
 
-Follow existing architecture and domain semantics. Make the smallest change that satisfies the request.
+   Wait for the user.
 
-If you encounter a bug, failed test, or unexpected behavior whose cause is not already proven, use `systematic-debugging` before patching.
+   If the user selects review, invoke `code-review` exactly once. If it returns blockers, stop and return the findings to the user. Do not fix and re-review autonomously. A later explicit user request may address those findings as a new bounded pass.
 
-Add or update targeted tests when behavior, invariants, regressions, authorization, or error paths warrant them. Fast path does not require ceremonial test-first work for mechanical changes.
+7. **Finalize**
+   - Finalize only through `finalize_work.sh`.
+   - If finalization fails, stop and report it. Do not retry automatically.
 
-## 5. Verify
+## Hard limits
 
-Run `run_checks.sh`. Run `run_tests.sh` when tests exist, behavior changed, the issue requires tests, or a regression is being fixed.
-
-Invoke `verify` before saying the work is ready. A `none-found` test result means no tests were found; never describe it as tests passing.
-
-Summarize the diff with `summarize_diff.sh`.
-
-## 6. Final gate
-
-Present:
-
-- `Execute code review.`
-- `Commit and merge.`
-- `Commit and push up as Pull Request.`
-
-If review is selected, invoke `code-review`. Fix blocking findings, re-run relevant verification, and re-review before offering finalization again.
-
-Finalize only through `finalize_work.sh`.
-
-## Rules
-
-- One bounded delivery unit only.
-- No mandatory subagents.
-- No speculative framework work.
-- Preserve project-specific instructions and invariants.
-- Do not claim success from code inspection alone.
+- One primary agent.
+- Zero sub-agents.
+- Zero automatic escalation to `sdlc-do`.
+- At most one review invocation per execution.
+- Zero autonomous review/fix/re-review loops.
+- Zero automatic retries after command failure.
+- Targeted verification only.
+- Deterministic work belongs in runtime helpers.
+- Do not modify unrelated files.

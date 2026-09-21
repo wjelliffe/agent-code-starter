@@ -2,13 +2,12 @@
 
 Agent Code Starter should need no project-local framework files in the common case.
 
-When a repository needs explicit overrides, create `.agent-code.json` at the repository root.
+When a repository needs explicit deterministic overrides, create `.agent-code.json` at the repository root.
 
 ```json
 {
   "trunk_branch": "main",
   "branch_prefix": "agent/",
-  "review_mode": "auto",
   "commands": {
     "checks": ["npm run lint", "npm run typecheck"],
     "tests": ["npm test"]
@@ -18,21 +17,17 @@ When a repository needs explicit overrides, create `.agent-code.json` at the rep
 
 ## Fields
 
-- `trunk_branch`: optional trunk branch override. If omitted, runtime detects `origin/HEAD` and falls back to `main`.
-- `branch_prefix`: branch namespace for Agent Code Starter work. Default: `agent/`.
-- `review_mode`: `auto`, `required`, or `optional`. `sdlc-do` always reviews regardless.
-- `commands.checks`: explicit commands for static/type/lint/build checks. When present, these replace check auto-detection.
-- `commands.tests`: explicit test commands. When present, these replace test auto-detection.
+- `trunk_branch`: optional trunk branch override.
+- `branch_prefix`: optional branch namespace.
+- `commands.checks`: explicit static/type/lint/build commands.
+- `commands.tests`: explicit test commands.
 
 Commands are repository-controlled configuration and run from the repository root.
 
+Review behavior is intentionally not configured here. Review happens only when the user explicitly selects `Execute code review.` at the final gate.
+
 ## Auto-detection
 
-Without explicit commands, the runtime looks for conventional project signals:
-
-- JavaScript/TypeScript: package scripts and the detected npm/pnpm/yarn/bun package manager
-- Python: syntax compilation for checks; pytest when configured/available, otherwise unittest discovery when a tests directory exists
-- Go: `go vet ./...` and `go test ./...`
-- Rust: `cargo check --all-targets` and `cargo test --all-targets`
+Without explicit commands, runtime looks for conventional JavaScript/TypeScript, Python, Go, and Rust project signals.
 
 A project with no detectable test command reports `none-found`, not `pass`.

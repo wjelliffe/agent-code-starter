@@ -10,7 +10,7 @@
     {
       "name": "agent-code-starter",
       "displayName": "Agent Code Starter",
-      "description": "Adaptive engineering workflows for coding agents: implementation, strict SDLC, debugging, verification, and review.",
+      "description": "Four bounded engineering workflows backed by deterministic runtime helpers.",
       "source": {
         "source": "github",
         "repo": "wjelliffe/agent-code-starter"
