@@ -22,9 +22,8 @@ pass 'four skills plus workflow facade are present'
 [[ -z "$(find "$ROOT" -type f -name '*.py' -print)" ]] || fail 'Python files remain in repository'
 pass 'runtime is bundled with skills and has no Python dependency'
 
-assert_contains "$(cat "$ROOT/README.md")" 'Execution is cheap. Judgment is scarce.' 'README missing key saying'
 assert_contains "$(cat "$ROOT/README.md")" 'The orchestrator belongs in deterministic code. The model is a bounded worker.' 'README missing orchestration principle'
-pass 'README preserves product language'
+pass 'README preserves orchestration principle'
 
 # Script parity and syntax
 for sh in $(find "$ROOT/skills" -type f -path '*/scripts/*.sh' | sort); do

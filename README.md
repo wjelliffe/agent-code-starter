@@ -2,8 +2,6 @@
 
 > **Give your coding agent judgment, not bureaucracy.**
 
-**Execution is cheap. Judgment is scarce.**
-
 Agent Code Starter is a portable, deterministic software-delivery system for coding agents. It packages the boring mechanics with the plugin so the model can spend its intelligence where it matters: understanding requirements, designing the change, writing code, and attacking the result in review.
 
 > **The model decides what code to change. Scripts do everything deterministic. One task stays one task.**
@@ -63,7 +61,7 @@ Next: Run one fresh adversarial review pass.
 
 The runner does not have to reconstruct the lifecycle from chat history. It follows the state machine.
 
-That means stronger models can be spent on the scarce work — planning, implementation, and review — while orchestration remains cheap, explicit, and reproducible.
+That means stronger models can focus on planning, implementation, and review while orchestration stays explicit, deterministic, and reproducible.
 
 ## The plugin ships the engine
 
@@ -216,6 +214,6 @@ CI runs both Linux/Bash and Windows/PowerShell.
 
 ## Design rule
 
-A coding agent should not spend scarce reasoning tokens babysitting deterministic mechanics.
+A coding agent should not spend reasoning tokens babysitting deterministic mechanics.
 
 **Let scripts remember the state. Let scripts enforce the bounds. Let the model think.**

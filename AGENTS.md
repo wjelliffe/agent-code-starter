@@ -16,7 +16,6 @@ Agent Code Starter is an installable coding-agent plugin built around one rule:
 
 ## Product principles
 
-- Execution is cheap. Judgment is scarce.
 - One task stays one task.
 - Planning, implementation, acceptance assessment, and code review consume model judgment.
 - Git, GitHub writes, verification commands, workflow state, and transition limits are deterministic.
