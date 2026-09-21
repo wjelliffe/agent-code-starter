@@ -144,6 +144,7 @@ Agent Code Starter ships with one canonical skill set:
 
 ```text
 Agent Code Starter
+├── .agents/plugins/    installable marketplace
 ├── .codex-plugin/      Codex manifest
 ├── .claude-plugin/     Claude Code manifest
 ├── skills/             canonical agent behavior
@@ -189,23 +190,26 @@ See [configuration](docs/configuration.md).
 
 ## Installation
 
-### Codex
+### Codex Desktop — Chat **and** Work
 
-This repository is a Codex plugin root and contains the required `.codex-plugin/plugin.json`.
+Agent Code Starter is a Codex plugin. The same installed plugin is available in both **Chat** and **Work** modes; you do not need Work just to use the skills.
 
-For local development before marketplace publication, place the checkout at:
+This repository is also its own Codex marketplace, so installation is two commands:
 
-```text
-~/plugins/agent-code-starter
+```bash
+codex plugin marketplace add wjelliffe/agent-code-starter --ref main
+codex plugin add agent-code-starter@agent-code-starter
 ```
 
-Then register it in your personal `~/.agents/plugins/marketplace.json` as a local plugin source.
+Then start a new Codex chat/task so the installed skills are discovered.
 
-Once published to a marketplace, installation becomes the normal Plugins UI flow. Target repositories require no bootstrap step.
+You can also use the Codex plugin UI: add `wjelliffe/agent-code-starter` as a marketplace, then install **Agent Code Starter** from it.
+
+No Agent Code Starter files need to be copied into your application repositories.
 
 ### Claude Code
 
-The same repository includes `.claude-plugin/plugin.json` and uses the same canonical `skills/` content. Distribution/marketplace registration is separate from the skill implementation.
+The same repository includes `.claude-plugin/plugin.json` and uses the same canonical `skills/` content. Claude distribution remains separate from the Codex marketplace.
 
 ---
 

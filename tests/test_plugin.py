@@ -27,6 +27,18 @@ class PluginTests(unittest.TestCase):
         self.assertEqual(codex["skills"], "./skills/")
         self.assertEqual(codex["hooks"], {})
 
+    def test_repo_is_its_own_codex_marketplace(self):
+        marketplace = json.loads(
+            (ROOT / ".agents" / "plugins" / "marketplace.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual(marketplace["name"], "agent-code-starter")
+        self.assertEqual(len(marketplace["plugins"]), 1)
+        plugin = marketplace["plugins"][0]
+        self.assertEqual(plugin["name"], "agent-code-starter")
+        self.assertEqual(plugin["source"], {"source": "local", "path": "."})
+        self.assertEqual(plugin["category"], "Developer Tools")
+        self.assertEqual(plugin["policy"]["products"], ["CODEX"])
+
     def test_core_skills_exist_and_have_trigger_descriptions(self):
         found = {path.parent.name for path in (ROOT / "skills").glob("*/SKILL.md")}
         self.assertTrue(CORE_SKILLS.issubset(found))
