@@ -221,7 +221,36 @@ Personal Codex marketplaces are local to Codex; they are not the same as an acco
 
 ### Claude Code
 
-The same repository includes `.claude-plugin/plugin.json` and uses the same canonical `skills/` content. Claude distribution remains separate from the OpenAI plugin marketplace.
+ACS is also a native Claude Code plugin using the same canonical `skills/` content.
+
+Add the ACS marketplace from GitHub, then install the plugin:
+
+```bash
+claude plugin marketplace add wjelliffe/agent-code-starter
+claude plugin install agent-code-starter@agent-code-starter
+```
+
+If Claude Code tells you the new plugin needs a reload, run:
+
+```text
+/reload-plugins
+```
+
+You can also do the same thing interactively inside Claude Code:
+
+```text
+/plugin marketplace add wjelliffe/agent-code-starter
+/plugin install agent-code-starter@agent-code-starter
+```
+
+To pull marketplace changes later:
+
+```bash
+claude plugin marketplace update agent-code-starter
+claude plugin update agent-code-starter@agent-code-starter
+```
+
+Claude Code namespaces plugin skills under the plugin name, so ACS skills are available from the installed plugin rather than copied into each application repository.
 
 ---
 

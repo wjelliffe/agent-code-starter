@@ -1,0 +1,21 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "agent-code-starter",
+  "description": "Agent Code Starter plugin marketplace for Claude Code.",
+  "owner": {
+    "name": "Will Jelliffe",
+    "url": "https://github.com/wjelliffe"
+  },
+  "plugins": [
+    {
+      "name": "agent-code-starter",
+      "displayName": "Agent Code Starter",
+      "description": "Adaptive engineering workflows for coding agents: implementation, strict SDLC, debugging, verification, and review.",
+      "source": {
+        "source": "github",
+        "repo": "wjelliffe/agent-code-starter"
+      },
+      "category": "development"
+    }
+  ]
+}

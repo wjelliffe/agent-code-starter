@@ -45,6 +45,23 @@ class PluginTests(unittest.TestCase):
         self.assertEqual(plugin["category"], "Developer Tools")
         self.assertNotIn("products", plugin["policy"])
 
+    def test_repo_is_its_own_claude_marketplace(self):
+        marketplace = json.loads(
+            (ROOT / ".claude-plugin" / "marketplace.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual(marketplace["name"], "agent-code-starter")
+        self.assertEqual(len(marketplace["plugins"]), 1)
+        plugin = marketplace["plugins"][0]
+        self.assertEqual(plugin["name"], "agent-code-starter")
+        self.assertEqual(
+            plugin["source"],
+            {
+                "source": "github",
+                "repo": "wjelliffe/agent-code-starter",
+            },
+        )
+        self.assertEqual(plugin["category"], "development")
+
     def test_core_skills_exist_and_have_trigger_descriptions(self):
         found = {path.parent.name for path in (ROOT / "skills").glob("*/SKILL.md")}
         self.assertTrue(CORE_SKILLS.issubset(found))
