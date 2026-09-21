@@ -1,54 +1,43 @@
 ---
 name: code-review
-description: Use when performing one skeptical, read-only review of a pull request or current diff against its requirements and posting PR findings when GitHub write access is available.
+description: Use when performing one skeptical, read-only review of a pull request or current diff against its requirements.
 metadata:
-  short-description: One-shot adversarial review
+  short-description: Adversarial one-pass review
 ---
 
 # Code Review
 
-Perform exactly one skeptical review pass. Do not modify files. Do not spawn sub-agents or other reviewers. Do not invoke implementation skills.
+Perform one skeptical review pass. Do not edit code.
 
-## Pull request review
+For a pull request, gather deterministic evidence with `scripts/get-review-context.* <pr-number>`. Read the linked requirements, full diff, relevant surrounding code, tests, and CI evidence.
 
-When a PR is provided:
+## Review for
 
-1. Read the linked issue/request and acceptance criteria.
-2. Read the complete PR diff against current trunk.
-3. Inspect only the relevant surrounding code needed to validate architecture and invariants.
-4. Inspect relevant tests and available CI evidence.
-5. Check for:
-   - missed acceptance criteria
-   - correctness and regressions
-   - invalid/error paths
-   - security or data-integrity issues when relevant
-   - missing targeted tests
-   - scope creep
+- missed acceptance criteria
+- correctness and regressions
+- invalid/error paths
+- security or data-integrity failures where relevant
+- broken architectural invariants
+- missing targeted tests
+- unnecessary scope creep
 
-Produce concrete findings with file/behavior evidence.
+## Review artifact
 
-Then submit exactly one GitHub PR review when write access is available:
+Write a concise Markdown review with a `## Findings` heading. Each blocker should identify the affected behavior/file and concrete evidence.
 
-- use a COMMENT review so the workflow also works when the connected GitHub user owns the PR
-- place actionable findings inline on changed lines when an exact diff location is available
-- put findings that cannot be anchored safely in the review body
-- end the review body with exactly one verdict:
-  - `VERDICT: APPROVE`
-  - `VERDICT: BLOCKERS`
+End with exactly one final line:
+
+- `VERDICT: APPROVE`
+- `VERDICT: BLOCKERS`
+
+Validate it with `scripts/validate-review.*`. For PR review, post exactly one COMMENT review with `scripts/submit-review.*` when GitHub write access is available.
 
 Any substantive correctness, security, data-loss, invariant, regression, or requirement failure means `VERDICT: BLOCKERS`.
 
-If GitHub review writes are unavailable, return the same findings and verdict in chat and state that they were not posted.
+## Contract
 
-## Local diff review
-
-If no PR exists and the user explicitly requests review of a local/current diff, return findings and the verdict in chat only.
-
-## Hard limits
-
-- One review pass.
-- Zero edits.
-- Zero remediation.
-- Zero sub-agents.
-- Zero follow-up review unless the user explicitly invokes `code-review` again later.
-- Never start a review/fix/re-review loop.
+- Read-only.
+- One review pass per invocation.
+- No remediation inside this skill.
+- Prefer a fresh/independent context when the review is part of `sdlc-do`.
+- The model supplies judgment. Scripts gather evidence, validate the review contract, and post it.

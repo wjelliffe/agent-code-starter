@@ -1,33 +1,37 @@
 # Agent Code Starter contributor guidance
 
-This repository is the source for an installable coding-agent plugin.
+Agent Code Starter is an installable coding-agent plugin built around one rule:
+
+> The orchestrator belongs in deterministic code. The model is a bounded worker.
 
 ## Architecture
 
-- `skills/` contains exactly four human-facing workflows: `issues`, `implement`, `sdlc-do`, and `code-review`.
-- `runtime/` contains deterministic Git, GitHub, validation, test/check, and finalization mechanics.
-- Project-specific architecture, invariants, commands, and policy stay in the target repository.
-- `.agent-code.json` is the optional target-repository override surface.
+- Four judgment skills: `issues`, `plan`, `implement`, `code-review`.
+- One workflow facade: `sdlc-do`.
+- Each skill owns its deterministic helpers under `skills/<name>/scripts/`.
+- Runtime helpers ship in Bash and PowerShell pairs; ACS has no Python/Node runtime dependency.
+- `sdlc-do/scripts/sdlc.*` owns the finite lifecycle and persisted state.
+- Target repositories own product truth and may optionally provide `.agent-code` overrides.
+- Do not copy ACS framework scripts into target repositories.
 
 ## Product principles
 
+- Execution is cheap. Judgment is scarce.
 - One task stays one task.
-- One primary agent only; no sub-agent orchestration in implementation workflows.
-- No automatic workflow escalation.
-- No automatic retry loops.
-- Implementation workflows never review their own work.
-- PR review is a separate, one-shot, read-only workflow intended for an independent AI/session.
-- Review findings should be posted onto the PR when GitHub write access is available.
-- Existing PR feedback is addressed by a new bounded `implement` pass on the same PR branch.
-- Review blockers never trigger autonomous remediation or re-review.
-- Deterministic work belongs in runtime helpers.
+- Planning, implementation, acceptance assessment, and code review consume model judgment.
+- Git, GitHub writes, verification commands, workflow state, and transition limits are deterministic.
+- `implement` is the bounded fast path.
+- `sdlc-do` drives one bounded feature to `DONE` or `BLOCKED` after one plan approval gate.
+- SDLC review is bounded to two passes with at most one remediation pass.
+- The final review cannot recurse into another remediation cycle.
+- Prefer a fresh review context; do not turn the system into an agent team.
 - Evidence before completion claims.
 
 ## Changes to this repository
 
-- Do not add new skills without a compelling reason and an explicit product decision.
-- Do not reintroduce recursive review/fix/re-review behavior.
-- Do not add routing that silently turns `implement` into `sdlc-do`.
-- Do not add code review back into `implement` or `sdlc-do`.
-- Add or update tests when changing skill contracts or runtime behavior.
-- Keep plugin versions in Codex and Claude manifests synchronized.
+- Keep `sdlc-do/SKILL.md` thin; orchestration logic belongs in `sdlc.*`.
+- Do not add routing that silently upgrades `implement` into another workflow.
+- Do not add runtime dependencies just to parse configuration/state.
+- Keep Bash and PowerShell behavior equivalent.
+- Add regression coverage for every state transition or deterministic safety rule you change.
+- Keep Codex and Claude plugin versions synchronized.

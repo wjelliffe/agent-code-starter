@@ -9,12 +9,17 @@ permissions:
   contents: read
 
 jobs:
-  test:
+  bash:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7.0.1
-      - uses: actions/setup-python@v7.0.0
-        with:
-          python-version: "3.12"
-      - name: Run plugin and runtime tests
-        run: python3 -m unittest discover -s tests -v
+      - name: Run Bash regression suite
+        run: bash tests/run.sh
+
+  powershell:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - name: Run PowerShell regression suite
+        shell: pwsh
+        run: ./tests/run.ps1

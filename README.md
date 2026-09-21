@@ -2,142 +2,179 @@
 
 > **Give your coding agent judgment, not bureaucracy.**
 
-Agent Code Starter is a small set of bounded software-delivery workflows backed by deterministic runtime helpers.
+**Execution is cheap. Judgment is scarce.**
 
-The design goal is simple:
+Agent Code Starter is a portable, deterministic software-delivery system for coding agents. It packages the boring mechanics with the plugin so the model can spend its intelligence where it matters: understanding requirements, designing the change, writing code, and attacking the result in review.
 
 > **The model decides what code to change. Scripts do everything deterministic. One task stays one task.**
 
-A normal implementation must not turn into a planner → implementer → reviewer → fixer → reviewer loop.
+No copied `agentic-scripts/` folder. No Python runtime. No mystery router deciding what workflow you meant. No infinite reviewer-fixer treadmill.
 
-## Four skills
+## Four skills. One workflow.
 
-ACS has exactly four human-facing skills:
+ACS has four bounded judgment skills:
 
-- **`issues`** — turn product/engineering input into actionable GitHub issues.
-- **`implement`** — cheap, bounded execution for one clear issue/request, or one bounded pass addressing existing PR review feedback.
-- **`sdlc-do`** — explicit stricter execution for one bounded unit when you want the extra ceremony.
-- **`code-review`** — one-shot, read-only adversarial review of a PR or diff.
+- **`issues`** — turn rough product/engineering input into actionable GitHub work.
+- **`plan`** — design one change against the actual repository before touching code.
+- **`implement`** — execute one bounded coding pass or remediate one existing PR.
+- **`code-review`** — perform one skeptical, read-only adversarial review.
 
-There is no verify skill, debugging skill, review-remediation skill, or automatic routing skill. Those concerns are either inline execution rules or deterministic runtime behavior.
+And one end-to-end workflow:
 
-## The execution contract
+- **`sdlc-do`** — plan it with me, then finish the feature.
 
-Implementation flows are hard-bounded:
-
-- one primary agent
-- zero sub-agents
-- zero agent-team orchestration
-- zero automatic retries
-- zero automatic review invocations
-- zero autonomous review → fix → re-review loops
-- no automatic escalation from `implement` to `sdlc-do`
-- stop on command failure and report evidence
-
-## Cross-AI review workflow
-
-The intended review flow is deliberately split across independent sessions/models:
+`/sdlc-do` is not a giant prompt pretending to be an orchestrator. It is a thin facade over a deterministic finite state machine.
 
 ```text
-AI A: implement / sdlc-do
-        ↓
-      push PR
-        ↓
-      STOP
-        ↓
-AI B: code-review
-        ↓
- GitHub review comments
-        ↓
-      STOP
-        ↓
-AI A: implement review remediation
-        ↓
-   push same PR
-        ↓
-      STOP
-        ↓
-optional explicit re-review by AI B
+plan → approve → implement → verify → PR → review
+                                      │
+                         approve ─────┘────→ merge → done
+                                      │
+                                   blockers
+                                      ↓
+                                  remediate
+                                      ↓
+                                   reverify
+                                      ↓
+                                 final review
+                                  ↙         ↘
+                              approve      blockers
+                                ↓             ↓
+                              merge        BLOCKED
 ```
 
-Every transition between those stages is initiated by the user. ACS never creates an autonomous review loop.
+There is no arrow from the final review back into another remediation loop.
 
-### Implementation
+## Why this is different
 
-`implement` and `sdlc-do` finish with exactly two choices:
+Most agent workflows ask an expensive model to remember where it is, decide what comes next, run shell commands, interpret exit codes, invent retry policy, and somehow know when to stop.
 
-- `Commit and merge.`
-- `Commit and push up as Pull Request.`
+ACS pushes that work down into deterministic scripts.
 
-They do not review their own work.
+The workflow controller can tell even a lightweight runner:
 
-### Independent review
+```text
+ACS SDLC issue-107
+State: REVIEW_1_REQUIRED
+Review passes: 0/2
+PR: #123
+Next: Run one fresh adversarial review pass.
+```
 
-Run `code-review` separately, ideally with a different AI/model/session. For a PR, it performs one skeptical pass and, when GitHub write access is available, posts one COMMENT review with actionable inline findings where they can be safely anchored.
+The runner does not have to reconstruct the lifecycle from chat history. It follows the state machine.
 
-The reviewer never edits code.
+That means stronger models can be spent on the scarce work — planning, implementation, and review — while orchestration remains cheap, explicit, and reproducible.
 
-### Addressing review comments
+## The plugin ships the engine
 
-Run `implement` again and explicitly ask it to address review comments on the existing PR. It works on that PR's head branch, fixes valid findings, runs relevant verification once, pushes to the same PR, replies to threads when useful, and stops.
+The deterministic helpers live beside the skills that use them:
 
-Re-review only when you explicitly ask AI B to run `code-review` again.
+```text
+skills/
+├── issues/
+│   ├── SKILL.md
+│   └── scripts/
+├── plan/
+│   ├── SKILL.md
+│   └── scripts/
+├── implement/
+│   ├── SKILL.md
+│   └── scripts/
+├── code-review/
+│   ├── SKILL.md
+│   └── scripts/
+└── sdlc-do/
+    ├── SKILL.md
+    └── scripts/
+```
 
-## Two implementation modes
+Application repositories do **not** need a copied ACS framework directory. Install the plugin and the engine comes with it.
+
+Every runtime helper ships in both Bash and PowerShell form. ACS itself requires no Python, Node, or other language runtime. It only assumes the tools needed for the action being performed, primarily `git` and `gh` for GitHub operations. Project-specific language runtimes are used only when running that project's own checks/tests.
+
+## What the scripts own
+
+Deterministic code handles:
+
+- GitHub issue reads/writes
+- branch and worktree setup
+- configured or auto-detected checks/tests
+- diff summaries
+- plan/review contract validation
+- PR creation and same-PR remediation updates
+- PR merge
+- persisted SDLC state
+- legal workflow transitions
+- hard review/remediation limits
+
+The model handles:
+
+- what the requirement means
+- how the repository should change
+- writing the code
+- whether acceptance criteria and invariants are satisfied
+- adversarial review judgment
+
+> **The orchestrator belongs in deterministic code. The model is a bounded worker.**
+
+## `implement` vs `sdlc-do`
 
 | | `implement` | `sdlc-do` |
 |---|---|---|
-| Use for | Clear task or PR remediation | Explicit strict pass |
-| Plan approval | No | Yes |
-| Isolation | Minimal/safe | Branch/worktree |
-| Testing | Targeted | Deliberate |
-| Self-review | Never | Never |
-| Retry loops | Never | Never |
-| Sub-agents | Never | Never |
+| Best for | Clear bounded task | Feature you want driven to completion |
+| Plan gate | No | Yes |
+| Isolation | Safe branch | Worktree/branch |
+| Review | Separate | Built into the finite lifecycle |
+| Remediation | Explicit one-pass mode | At most once |
+| Final review | Explicit if desired | Yes, after remediation |
+| End state | Merge or PR | `DONE` or `BLOCKED` |
 
-The choice is explicit. ACS does not inspect keywords and silently promote a task into a larger workflow.
+Use `implement` when the task is obvious and you want speed. Use `sdlc-do` when you want to approve the design once and have ACS carry the bounded feature through review and merge.
 
-## Deterministic runtime
+## Cross-AI review still works
 
-`runtime/` contains mechanics that should not consume model judgment:
-
-- issue normalization/writing
-- branch/worktree setup
-- check and test execution
-- diff summaries
-- Definition of Ready / Definition of Done validation
-- final commit/merge/new-PR behavior
-- safe updates to an existing PR branch
-
-Runtime helpers execute against the target repository working directory. The plugin stays the methodology; the target repository stays the source of project truth.
-
-## Repository layout
+The standalone primitives remain useful independently. You can have one provider implement and another attack the PR:
 
 ```text
-Agent Code Starter
-├── .agents/plugins/     Codex/ChatGPT marketplace metadata
-├── .codex-plugin/       Codex plugin manifest
-├── .claude-plugin/      Claude Code plugin metadata
-├── skills/
-│   ├── issues/
-│   ├── implement/
-│   ├── sdlc-do/
-│   └── code-review/
-├── runtime/             deterministic helpers
-└── tests/               behavioral/runtime regression tests
+AI A: implement → PR
+AI B: code-review → findings
+AI A: implement remediation → same PR
+AI B: optional explicit re-review
 ```
+
+`sdlc-do` simply bakes a bounded version of that lifecycle into deterministic state: maximum two review passes, maximum one remediation pass.
+
+## Project configuration
+
+Most repositories need nothing.
+
+If a project wants explicit overrides, add a tiny `.agent-code` file:
+
+```text
+trunk_branch=main
+branch_prefix=agent/
+check=npm run lint
+check=npm run typecheck
+test=npm test
+```
+
+Repeated `check=` and `test=` lines are executed in order. The deliberately simple line format avoids requiring a JSON parser or scripting language runtime.
+
+See [configuration](docs/configuration.md).
 
 ## Installation
 
-### ChatGPT workspace
+### ChatGPT workspace / Work
 
-Workspace admins can import this repository directly:
+Workspace admins can import this repository as a plugin marketplace:
 
 1. Open **Workspace settings → Plugins**.
 2. Select **Add → Import marketplace**.
 3. Use `https://github.com/wjelliffe/agent-code-starter`.
 4. Use the default branch (`main`).
-5. Import the marketplace and make Agent Code Starter available to the desired users.
+5. Import Agent Code Starter and make it available to the desired users.
+
+Executable workflows require a coding execution environment such as Work or Codex. Ordinary chat can read the skill instructions but should not pretend it executed repository scripts when no shell/repository environment exists.
 
 ### Personal Codex
 
@@ -146,7 +183,7 @@ codex plugin marketplace add wjelliffe/agent-code-starter --ref main
 codex plugin add agent-code-starter@agent-code-starter
 ```
 
-Start a new Codex task after installation so the skills are rediscovered.
+Start a new Codex task after installation so skills are rediscovered.
 
 ### Claude Code
 
@@ -161,36 +198,24 @@ If Claude Code asks for a reload:
 /reload-plugins
 ```
 
-To update later:
-
-```bash
-claude plugin marketplace update agent-code-starter
-claude plugin update agent-code-starter@agent-code-starter
-```
-
-## Project overrides
-
-Repositories may optionally provide `.agent-code.json` for deterministic command configuration:
-
-```json
-{
-  "trunk_branch": "main",
-  "branch_prefix": "agent/",
-  "commands": {
-    "checks": ["npm run lint", "npm run typecheck"],
-    "tests": ["npm test"]
-  }
-}
-```
-
-See [configuration](docs/configuration.md).
-
 ## Development
 
-Run the regression suite with:
+ACS has no runtime language dependency. The regression suite is shell-native too:
 
 ```bash
-python3 -m unittest discover -s tests -v
+bash tests/run.sh
 ```
 
-The tests enforce the four-skill surface, no self-review, no recursive orchestration, and safe existing-PR remediation.
+On Windows:
+
+```powershell
+pwsh -File tests/run.ps1
+```
+
+CI runs both Linux/Bash and Windows/PowerShell.
+
+## Design rule
+
+A coding agent should not spend scarce reasoning tokens babysitting deterministic mechanics.
+
+**Let scripts remember the state. Let scripts enforce the bounds. Let the model think.**

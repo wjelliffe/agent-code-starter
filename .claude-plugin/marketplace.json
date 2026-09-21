@@ -10,7 +10,7 @@
     {
       "name": "agent-code-starter",
       "displayName": "Agent Code Starter",
-      "description": "Four bounded engineering workflows backed by deterministic runtime helpers.",
+      "description": "Deterministic SDLC for coding agents: four judgment skills plus one bounded end-to-end workflow.",
       "source": {
         "source": "github",
         "repo": "wjelliffe/agent-code-starter"

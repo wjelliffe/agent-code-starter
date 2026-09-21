@@ -1,7 +1,7 @@
 {
   "name": "agent-code-starter",
-  "version": "2.0.0",
-  "description": "Bounded software-delivery workflows for coding agents backed by deterministic runtime helpers.",
+  "version": "3.0.0",
+  "description": "Deterministic software delivery for coding agents: four judgment skills plus one bounded end-to-end SDLC workflow.",
   "author": {
     "name": "Will Jelliffe",
     "url": "https://github.com/wjelliffe"
@@ -11,20 +11,23 @@
   "keywords": [
     "coding-agents",
     "software-delivery",
+    "sdlc",
     "code-review",
-    "verification"
+    "deterministic-workflows"
   ],
   "skills": "./skills/",
   "hooks": {},
   "interface": {
     "displayName": "Agent Code Starter",
-    "shortDescription": "Bounded engineering workflows for coding agents",
-    "longDescription": "Four explicit workflows for issue definition, cheap implementation, strict SDLC execution, and one-shot code review. No automatic routing or sub-agent orchestration.",
+    "shortDescription": "Deterministic SDLC for coding agents",
+    "longDescription": "Four bounded judgment skills for issues, planning, implementation, and adversarial review, plus a deterministic end-to-end SDLC workflow that drives one feature to DONE or BLOCKED.",
     "developerName": "Will Jelliffe",
     "category": "Developer Tools",
     "capabilities": ["Interactive", "Read", "Write"],
     "defaultPrompt": [
+      "Plan this GitHub issue.",
       "Implement this GitHub issue.",
+      "Take this feature through the full SDLC.",
       "Review this pull request.",
       "Turn this idea into GitHub issues."
     ],

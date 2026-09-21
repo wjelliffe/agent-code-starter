@@ -1,7 +1,7 @@
 {
   "name": "agent-code-starter",
-  "version": "2.0.0",
-  "description": "Four bounded engineering workflows for Claude Code backed by deterministic runtime helpers.",
+  "version": "3.0.0",
+  "description": "Deterministic software delivery for coding agents: four judgment skills plus one bounded end-to-end SDLC workflow.",
   "author": {
     "name": "Will Jelliffe"
   },
@@ -10,7 +10,8 @@
   "keywords": [
     "coding-agents",
     "software-delivery",
+    "sdlc",
     "code-review",
-    "verification"
+    "deterministic-workflows"
   ]
 }

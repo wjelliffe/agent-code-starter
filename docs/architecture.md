@@ -1,66 +1,79 @@
 # Architecture
 
-Agent Code Starter separates agent judgment from deterministic mechanics.
+Agent Code Starter separates scarce model judgment from cheap deterministic execution.
 
-## Skill layer
+## Primitive map
 
-There are exactly four user-facing skills:
+| Primitive | ACS use |
+|---|---|
+| Command | Optional host-specific invocation ergonomics only |
+| Skill | Bounded unit of model judgment |
+| Agent | Fresh isolated reviewer context when the host supports it |
+| Script | Deterministic execution |
+| Workflow | Finite state machine composing bounded capabilities |
+| Hook | Optional future guardrail; never required for correctness |
+| Plugin | Installable Agent Code Starter product |
+| Marketplace | Distribution only |
 
-- `issues`
-- `implement`
-- `sdlc-do`
-- `code-review`
+## Four skills
 
-`implement` and `sdlc-do` are explicit implementation choices. There is no automatic risk router and neither workflow reviews its own work.
+- `issues`: requirements shaping and issue design.
+- `plan`: read-only technical design for one bounded change.
+- `implement`: one bounded coding/remediation pass.
+- `code-review`: one skeptical read-only review pass.
 
-Both execution skills use one primary agent, forbid sub-agent orchestration, stop on failures instead of retrying autonomously, and end with a merge-vs-PR finalization choice.
+A skill starts with a recognizable goal, exercises bounded judgment, produces an artifact/result, and stops.
 
-`code-review` is a separate one-shot, read-only adversarial workflow. For a PR, it posts one GitHub review with actionable inline findings where possible and never edits code.
+## One workflow
 
-Review remediation is not a fifth skill. A later explicit `implement` invocation loads the existing PR feedback, fixes valid findings on the same PR branch, validates once, pushes the update, and stops.
+`sdlc-do` is conceptually a workflow, even though it is packaged as a skill so hosts can discover/invoke it.
 
-The intended cross-AI flow is:
+Its `SKILL.md` is a facade over `skills/sdlc-do/scripts/sdlc.sh` and `sdlc.ps1`. Those controllers persist state under the repository's Git common directory and own legal transitions.
 
 ```text
-AI A: implement / sdlc-do
-        ↓
-      push PR
-        ↓
-      STOP
-        ↓
-AI B: code-review
-        ↓
-  GitHub review comments
-        ↓
-      STOP
-        ↓
-AI A: implement review remediation
-        ↓
-  push existing PR
-        ↓
-      STOP
-        ↓
-optional explicit re-review by AI B
+PLAN_REQUIRED
+  ↓ approval
+IMPLEMENT_REQUIRED
+  ↓
+VERIFY_REQUIRED
+  ↓
+CREATE_PR_REQUIRED
+  ↓
+REVIEW_1_REQUIRED
+  ├─ approve → MERGE_REQUIRED → DONE
+  └─ blockers → REMEDIATE_REQUIRED
+                    ↓
+               REVERIFY_REQUIRED
+                    ↓
+               REVIEW_2_REQUIRED
+                ├─ approve → MERGE_REQUIRED → DONE
+                └─ blockers → BLOCKED
 ```
 
-Every transition between agents is initiated by the user. ACS never creates an autonomous review loop.
+There is no transition from `REVIEW_2_REQUIRED` back to remediation.
 
-## Runtime layer
+## Runtime placement
 
-`runtime/` contains deterministic operations:
+Deterministic helpers live beside their owning skills:
 
-- issue normalization and writing
-- request/issue context preparation
-- branch/worktree creation
-- check/test execution
-- diff summarization
-- DOR/DoD validation
-- final commit/merge/new-PR/update-existing-PR operations
+- issue helpers under `skills/issues/scripts/`
+- plan validation under `skills/plan/scripts/`
+- Git/worktree/test/finalization helpers under `skills/implement/scripts/`
+- review evidence/validation/posting under `skills/code-review/scripts/`
+- lifecycle state under `skills/sdlc-do/scripts/`
 
-Runtime scripts execute with the target repository as the working directory. They must never infer the target repository from the plugin installation path.
+The plugin ships both Bash and PowerShell implementations. No Python or Node runtime is required by ACS itself.
 
-## Target repository layer
+Target repositories are never expected to contain copied ACS framework directories.
 
-Project repositories own project truth: architecture, domain invariants, product requirements, tests, deployment conventions, security constraints, and optional `.agent-code.json` overrides.
+## State and progress
 
-The plugin must not copy shared framework files into target repositories.
+The SDLC controller stores primitive fields as files under the Git common directory. It intentionally avoids JSON/schema/runtime dependencies.
+
+`status` emits enough progress for a lightweight runner to continue without reconstructing lifecycle history from the conversation.
+
+## Reviewer isolation
+
+Independent review is valuable; generalized multi-agent orchestration is not required.
+
+When the host supports isolated workers, `sdlc-do` should use a fresh reviewer for `REVIEW_1_REQUIRED` and `REVIEW_2_REQUIRED`. The deterministic state machine still controls the number of review passes and whether remediation is permitted.
