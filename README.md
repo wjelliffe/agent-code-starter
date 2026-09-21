@@ -8,43 +8,90 @@ The design goal is simple:
 
 > **The model decides what code to change. Scripts do everything deterministic. One task stays one task.**
 
-A normal implementation should not turn into a planner → implementer → reviewer → fixer → reviewer loop. ACS intentionally forbids that default behavior.
+A normal implementation must not turn into a planner → implementer → reviewer → fixer → reviewer loop.
 
 ## Four skills
 
 ACS has exactly four human-facing skills:
 
 - **`issues`** — turn product/engineering input into actionable GitHub issues.
-- **`implement`** — cheap, bounded execution for one clear issue or request.
+- **`implement`** — cheap, bounded execution for one clear issue/request, or one bounded pass addressing existing PR review feedback.
 - **`sdlc-do`** — explicit stricter execution for one bounded unit when you want the extra ceremony.
-- **`code-review`** — one-shot skeptical review. Review only; no edits.
+- **`code-review`** — one-shot, read-only adversarial review of a PR or diff.
 
-There is no `verify` skill, no debugging skill, no review-remediation skill, and no automatic routing skill. Those concerns are either inline execution rules or deterministic runtime behavior.
+There is no verify skill, debugging skill, review-remediation skill, or automatic routing skill. Those concerns are either inline execution rules or deterministic runtime behavior.
 
 ## The execution contract
 
-Both implementation flows are hard-bounded:
+Implementation flows are hard-bounded:
 
 - one primary agent
 - zero sub-agents
 - zero agent-team orchestration
 - zero automatic retries
-- at most one review invocation per execution
+- zero automatic review invocations
 - zero autonomous review → fix → re-review loops
 - no automatic escalation from `implement` to `sdlc-do`
 - stop on command failure and report evidence
 
-If review finds blockers, ACS stops. Fixing them is a later explicit user action, not an invisible recursive loop.
+## Cross-AI review workflow
+
+The intended review flow is deliberately split across independent sessions/models:
+
+```text
+AI A: implement / sdlc-do
+        ↓
+      push PR
+        ↓
+      STOP
+        ↓
+AI B: code-review
+        ↓
+ GitHub review comments
+        ↓
+      STOP
+        ↓
+AI A: implement review remediation
+        ↓
+   push same PR
+        ↓
+      STOP
+        ↓
+optional explicit re-review by AI B
+```
+
+Every transition between those stages is initiated by the user. ACS never creates an autonomous review loop.
+
+### Implementation
+
+`implement` and `sdlc-do` finish with exactly two choices:
+
+- `Commit and merge.`
+- `Commit and push up as Pull Request.`
+
+They do not review their own work.
+
+### Independent review
+
+Run `code-review` separately, ideally with a different AI/model/session. For a PR, it performs one skeptical pass and, when GitHub write access is available, posts one COMMENT review with actionable inline findings where they can be safely anchored.
+
+The reviewer never edits code.
+
+### Addressing review comments
+
+Run `implement` again and explicitly ask it to address review comments on the existing PR. It works on that PR's head branch, fixes valid findings, runs relevant verification once, pushes to the same PR, replies to threads when useful, and stops.
+
+Re-review only when you explicitly ask AI B to run `code-review` again.
 
 ## Two implementation modes
 
 | | `implement` | `sdlc-do` |
 |---|---|---|
-| Use for | Clear single task | Explicit strict pass |
+| Use for | Clear task or PR remediation | Explicit strict pass |
 | Plan approval | No | Yes |
 | Isolation | Minimal/safe | Branch/worktree |
 | Testing | Targeted | Deliberate |
-| Review | Optional, user-selected | Optional, user-selected |
+| Self-review | Never | Never |
 | Retry loops | Never | Never |
 | Sub-agents | Never | Never |
 
@@ -52,14 +99,15 @@ The choice is explicit. ACS does not inspect keywords and silently promote a tas
 
 ## Deterministic runtime
 
-`runtime/` contains the mechanics that should not consume model judgment:
+`runtime/` contains mechanics that should not consume model judgment:
 
 - issue normalization/writing
 - branch/worktree setup
 - check and test execution
 - diff summaries
 - Definition of Ready / Definition of Done validation
-- final commit/merge/PR behavior
+- final commit/merge/new-PR behavior
+- safe updates to an existing PR branch
 
 Runtime helpers execute against the target repository working directory. The plugin stays the methodology; the target repository stays the source of project truth.
 
@@ -145,4 +193,4 @@ Run the regression suite with:
 python3 -m unittest discover -s tests -v
 ```
 
-The tests intentionally enforce the four-skill surface and bounded execution contract so recursive orchestration cannot quietly creep back in.
+The tests enforce the four-skill surface, no self-review, no recursive orchestration, and safe existing-PR remediation.

@@ -3,9 +3,10 @@ set -euo pipefail
 
 mode="${1:-}"
 context_path="${2:-}"
+pr_number="${3:-}"
 
-if [[ "${mode}" != "merge" && "${mode}" != "pr" ]]; then
-  echo "usage: $0 <merge|pr> <context-json>" >&2
+if [[ "${mode}" != "merge" && "${mode}" != "pr" && "${mode}" != "update-pr" ]]; then
+  echo "usage: $0 <merge|pr|update-pr> <context-json> [pr-number]" >&2
   exit 1
 fi
 [[ -n "${context_path}" && -f "${context_path}" ]] || { echo "context file not found: ${context_path}" >&2; exit 1; }
@@ -37,6 +38,33 @@ if [[ "${current_branch}" == "${trunk_branch}" ]]; then
   exit 1
 fi
 
+if [[ "${mode}" == "update-pr" ]]; then
+  [[ "${pr_number}" =~ ^[0-9]+$ ]] || { echo "update-pr requires a numeric PR number" >&2; exit 1; }
+  command -v gh >/dev/null 2>&1 || { echo "gh CLI is required for update-pr finalization" >&2; exit 1; }
+
+  if ! pr_json="$(gh pr view "${pr_number}" --json number,state,headRefName 2>&1)"; then
+    echo "failed to load pull request #${pr_number}: ${pr_json}" >&2
+    exit 1
+  fi
+
+  read -r pr_state pr_head < <(
+    PR_JSON="${pr_json}" python3 <<'PY'
+import json, os
+payload = json.loads(os.environ["PR_JSON"])
+print(payload.get("state", ""), payload.get("headRefName", ""))
+PY
+  )
+
+  if [[ "${pr_state}" != "OPEN" ]]; then
+    echo "refusing to update PR #${pr_number}: state is ${pr_state}" >&2
+    exit 1
+  fi
+  if [[ "${pr_head}" != "${current_branch}" ]]; then
+    echo "refusing to update PR #${pr_number}: current branch ${current_branch} is not PR head ${pr_head}" >&2
+    exit 1
+  fi
+fi
+
 read_context="$(
 CONTEXT_PATH="${context_path}" python3 <<'PY'
 import json, os, re
@@ -66,7 +94,7 @@ summary="$(READ_CONTEXT="${read_context}" python3 -c 'import json,os; print(json
 closing_json="$(READ_CONTEXT="${read_context}" python3 -c 'import json,os; print(json.dumps(json.loads(os.environ["READ_CONTEXT"])["closing"]))')"
 has_issue_context="$(READ_CONTEXT="${read_context}" python3 -c 'import json,os; print("true" if json.loads(os.environ["READ_CONTEXT"])["has_issue_context"] else "false")')"
 
-if [[ "${has_issue_context}" == "true" && "${closing_json}" == "[]" ]]; then
+if [[ "${mode}" != "update-pr" && "${has_issue_context}" == "true" && "${closing_json}" == "[]" ]]; then
   echo "issue-based finalization requires at least one closing issue reference" >&2
   exit 1
 fi
@@ -75,13 +103,32 @@ cd "${repo_root}"
 git add -A
 git diff --cached --quiet && { echo "no staged changes to finalize" >&2; exit 1; }
 
-commit_args=(-m "feat: ${title}")
-while IFS= read -r ref; do
-  [[ -n "${ref}" ]] && commit_args+=(-m "Fixes #${ref}")
-done < <(CLOSING="${closing_json}" python3 -c 'import json,os; [print(x) for x in json.loads(os.environ["CLOSING"])]')
+if [[ "${mode}" == "update-pr" ]]; then
+  commit_args=(-m "fix: ${title}")
+else
+  commit_args=(-m "feat: ${title}")
+  while IFS= read -r ref; do
+    [[ -n "${ref}" ]] && commit_args+=(-m "Fixes #${ref}")
+  done < <(CLOSING="${closing_json}" python3 -c 'import json,os; [print(x) for x in json.loads(os.environ["CLOSING"])]')
+fi
 
 git commit "${commit_args[@]}" >/dev/null
 commit_sha="$(git rev-parse HEAD)"
+
+if [[ "${mode}" == "update-pr" ]]; then
+  git push origin "${current_branch}" >/dev/null
+  COMMIT_SHA="${commit_sha}" BRANCH="${current_branch}" PR_NUMBER="${pr_number}" python3 <<'PY'
+import json, os
+print(json.dumps({
+    "ok": True,
+    "mode": "update-pr",
+    "commit": os.environ["COMMIT_SHA"],
+    "branch": os.environ["BRANCH"],
+    "pr_number": int(os.environ["PR_NUMBER"]),
+}))
+PY
+  exit 0
+fi
 
 if [[ "${mode}" == "pr" ]]; then
   command -v gh >/dev/null 2>&1 || { echo "gh CLI is required for PR finalization" >&2; exit 1; }

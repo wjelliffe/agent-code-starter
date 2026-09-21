@@ -24,7 +24,7 @@ When a repository needs explicit deterministic overrides, create `.agent-code.js
 
 Commands are repository-controlled configuration and run from the repository root.
 
-Review behavior is intentionally not configured here. Review happens only when the user explicitly selects `Execute code review.` at the final gate.
+Review behavior is intentionally not configured here. `implement` and `sdlc-do` do not self-review. After creating a PR, invoke `code-review` separately in another AI/session when independent review is wanted.
 
 ## Auto-detection
 

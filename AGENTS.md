@@ -15,16 +15,19 @@ This repository is the source for an installable coding-agent plugin.
 - One primary agent only; no sub-agent orchestration in implementation workflows.
 - No automatic workflow escalation.
 - No automatic retry loops.
-- Code review is one-shot and never edits.
-- Review blockers stop execution; remediation requires a new explicit user action.
+- Implementation workflows never review their own work.
+- PR review is a separate, one-shot, read-only workflow intended for an independent AI/session.
+- Review findings should be posted onto the PR when GitHub write access is available.
+- Existing PR feedback is addressed by a new bounded `implement` pass on the same PR branch.
+- Review blockers never trigger autonomous remediation or re-review.
 - Deterministic work belongs in runtime helpers.
 - Evidence before completion claims.
-- Keep important invariants in the service/data layer rather than relying on UI-only enforcement.
 
 ## Changes to this repository
 
 - Do not add new skills without a compelling reason and an explicit product decision.
 - Do not reintroduce recursive review/fix/re-review behavior.
 - Do not add routing that silently turns `implement` into `sdlc-do`.
+- Do not add code review back into `implement` or `sdlc-do`.
 - Add or update tests when changing skill contracts or runtime behavior.
 - Keep plugin versions in Codex and Claude manifests synchronized.

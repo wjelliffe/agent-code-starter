@@ -20,7 +20,7 @@ Does not support epics, parent-issue orchestration, unrelated batching, delegati
 ## Gates
 
 - Gate 1: plan approval.
-- Gate 2: final approval.
+- Gate 2: finalization choice.
 
 ## Flow
 
@@ -52,23 +52,22 @@ Does not support epics, parent-issue orchestration, unrelated batching, delegati
 
 7. **Gate 2**
    Present exactly:
-   - `Execute code review.`
    - `Commit and merge.`
    - `Commit and push up as Pull Request.`
 
-   Wait for the user.
-
-   If the user selects review, invoke `code-review` exactly once. If it returns blockers, stop and return the findings. Do not fix and re-review autonomously. A later explicit user request may address them as a new bounded pass.
+   Wait for the user. Do not run code review inside `sdlc-do`.
 
 8. **Finalize**
    Use `finalize_work.sh` for the selected finalization action. If it fails, stop. Do not retry automatically.
+
+If a pull request is created, stop. Independent review is a separate `code-review` invocation, ideally performed by another AI/session. Any resulting review comments can later be addressed with a new bounded `implement` pass.
 
 ## Hard limits
 
 - One primary agent.
 - Zero sub-agents.
 - Zero orchestration.
-- At most one review invocation per execution.
+- Zero automatic review invocations.
 - Zero autonomous review/fix/re-review loops.
 - Zero automatic retries after command failure.
 - Deterministic work belongs in runtime helpers.

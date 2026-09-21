@@ -48,21 +48,30 @@ class PluginTests(unittest.TestCase):
             self.assertIsNotNone(match, name)
             self.assertTrue(match.group(1).startswith("Use when"), name)
 
-    def test_execution_skills_are_hard_bounded(self):
+    def test_execution_skills_never_self_review(self):
         implement = (ROOT / "skills" / "implement" / "SKILL.md").read_text(encoding="utf-8")
         sdlc = (ROOT / "skills" / "sdlc-do" / "SKILL.md").read_text(encoding="utf-8")
-        review = (ROOT / "skills" / "code-review" / "SKILL.md").read_text(encoding="utf-8")
 
         for text in (implement, sdlc):
             self.assertIn("One primary agent.", text)
             self.assertIn("Zero sub-agents.", text)
-            self.assertIn("At most one review invocation per execution.", text)
+            self.assertIn("Zero automatic review invocations.", text)
             self.assertIn("Zero autonomous review/fix/re-review loops.", text)
             self.assertIn("Zero automatic retries after command failure.", text)
+            self.assertNotIn("Execute code review.", text)
 
+        self.assertIn("Existing PR review-remediation flow", implement)
+        self.assertIn("finalize_work.sh update-pr", implement)
+        self.assertIn("Do not run code review inside", sdlc)
+
+    def test_code_review_is_independent_and_posts_one_review(self):
+        review = (ROOT / "skills" / "code-review" / "SKILL.md").read_text(encoding="utf-8")
         self.assertIn("Perform exactly one skeptical review pass.", review)
-        self.assertIn("Do not spawn sub-agents", review)
-        self.assertIn("must not edit, remediate, re-run itself, or launch another review", review)
+        self.assertIn("submit exactly one GitHub PR review", review)
+        self.assertIn("use a COMMENT review", review)
+        self.assertIn("Zero edits.", review)
+        self.assertIn("Zero remediation.", review)
+        self.assertIn("Zero sub-agents.", review)
 
     def test_automatic_routing_is_not_part_of_runtime(self):
         self.assertFalse((ROOT / "runtime" / "route.py").exists())

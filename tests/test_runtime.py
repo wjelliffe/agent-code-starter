@@ -101,6 +101,19 @@ class RuntimeTests(unittest.TestCase):
             self.assertNotEqual(proc.returncode, 0)
             self.assertIn("directly on trunk", proc.stderr)
 
+    def test_update_pr_requires_explicit_pr_number(self):
+        with RepoFixture() as root:
+            run(["git", "checkout", "-b", "agent/review-fix"], cwd=root)
+            context = root / "context.json"
+            context.write_text(json.dumps({
+                "title": "Address review feedback",
+                "summary": "Address review feedback",
+            }), encoding="utf-8")
+            (root / "change.txt").write_text("change\n", encoding="utf-8")
+            proc = run(["bash", str(RUNTIME / "finalize_work.sh"), "update-pr", str(context)], cwd=root)
+            self.assertNotEqual(proc.returncode, 0)
+            self.assertIn("requires a numeric PR number", proc.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()

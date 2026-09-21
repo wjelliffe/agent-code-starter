@@ -11,11 +11,39 @@ There are exactly four user-facing skills:
 - `sdlc-do`
 - `code-review`
 
-`implement` and `sdlc-do` are explicit choices. There is no automatic risk router.
+`implement` and `sdlc-do` are explicit implementation choices. There is no automatic risk router and neither workflow reviews its own work.
 
-Both execution skills use one primary agent, forbid sub-agent orchestration, stop on failures instead of retrying autonomously, and allow at most one user-selected review invocation per execution.
+Both execution skills use one primary agent, forbid sub-agent orchestration, stop on failures instead of retrying autonomously, and end with a merge-vs-PR finalization choice.
 
-`code-review` is one-shot and read-only. It cannot remediate findings or invoke another reviewer.
+`code-review` is a separate one-shot, read-only adversarial workflow. For a PR, it posts one GitHub review with actionable inline findings where possible and never edits code.
+
+Review remediation is not a fifth skill. A later explicit `implement` invocation loads the existing PR feedback, fixes valid findings on the same PR branch, validates once, pushes the update, and stops.
+
+The intended cross-AI flow is:
+
+```text
+AI A: implement / sdlc-do
+        ↓
+      push PR
+        ↓
+      STOP
+        ↓
+AI B: code-review
+        ↓
+  GitHub review comments
+        ↓
+      STOP
+        ↓
+AI A: implement review remediation
+        ↓
+  push existing PR
+        ↓
+      STOP
+        ↓
+optional explicit re-review by AI B
+```
+
+Every transition between agents is initiated by the user. ACS never creates an autonomous review loop.
 
 ## Runtime layer
 
@@ -27,7 +55,7 @@ Both execution skills use one primary agent, forbid sub-agent orchestration, sto
 - check/test execution
 - diff summarization
 - DOR/DoD validation
-- final commit/merge/PR operations
+- final commit/merge/new-PR/update-existing-PR operations
 
 Runtime scripts execute with the target repository as the working directory. They must never infer the target repository from the plugin installation path.
 
