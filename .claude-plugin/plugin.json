@@ -1,0 +1,17 @@
+{
+  "name": "agent-code-starter",
+  "version": "2.0.0",
+  "description": "Adaptive engineering workflows for coding agents: implementation, strict SDLC, debugging, verification, and review.",
+  "author": {
+    "name": "Will Jelliffe"
+  },
+  "homepage": "https://github.com/wjelliffe/agent-code-starter",
+  "repository": "https://github.com/wjelliffe/agent-code-starter",
+  "keywords": [
+    "coding-agents",
+    "software-delivery",
+    "code-review",
+    "debugging",
+    "verification"
+  ]
+}

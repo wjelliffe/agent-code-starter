@@ -1,0 +1,37 @@
+{
+  "name": "agent-code-starter",
+  "version": "2.0.0",
+  "description": "Adaptive software-delivery discipline for coding agents: fast for obvious work, rigorous for risky work.",
+  "author": {
+    "name": "Will Jelliffe",
+    "url": "https://github.com/wjelliffe"
+  },
+  "homepage": "https://github.com/wjelliffe/agent-code-starter",
+  "repository": "https://github.com/wjelliffe/agent-code-starter",
+  "keywords": [
+    "coding-agents",
+    "software-delivery",
+    "code-review",
+    "debugging",
+    "verification",
+    "tdd"
+  ],
+  "skills": "./skills/",
+  "hooks": {},
+  "interface": {
+    "displayName": "Agent Code Starter",
+    "shortDescription": "Adaptive engineering workflows for coding agents",
+    "longDescription": "Use a lean implementation path for ordinary work and automatically step up to a rigorous SDLC path for auth, data, migrations, infrastructure, security, and other high-risk changes.",
+    "developerName": "Will Jelliffe",
+    "category": "Developer Tools",
+    "capabilities": ["Interactive", "Read", "Write"],
+    "defaultPrompt": [
+      "Implement this GitHub issue.",
+      "Review this pull request.",
+      "Turn this idea into GitHub issues."
+    ],
+    "websiteURL": "https://github.com/wjelliffe/agent-code-starter",
+    "brandColor": "#2563EB",
+    "screenshots": []
+  }
+}
